@@ -40,7 +40,7 @@ const WheelPlain: FC<{ cx: number; cy: number; r?: number }> = ({ cx, cy, r = 7 
 
 // ── locomotives ───────────────────────────────────────────────────────────────
 
-/** Classic red steam locomotive — faces right */
+/** Classic red steam locomotive — faces left (towards signal) */
 export const SteamLoco: FC<SvgProps> = ({ size = 80 }) => (
   <svg
     viewBox="0 0 130 70"
@@ -49,6 +49,7 @@ export const SteamLoco: FC<SvgProps> = ({ size = 80 }) => (
     xmlns="http://www.w3.org/2000/svg"
     style={{ display: 'block' }}
   >
+    <g transform="translate(130,0) scale(-1,1)">
     {/* ── track/footplate ── */}
     <rect x="4" y="59" width="122" height="4" rx="1" fill="#555" />
 
@@ -104,10 +105,11 @@ export const SteamLoco: FC<SvgProps> = ({ size = 80 }) => (
 
     {/* connecting rod */}
     <rect x="22" y="58" width="90" height="4" rx="2" fill="#666" opacity="0.8" />
+    </g>
   </svg>
 )
 
-/** Streamlined blue electric locomotive — faces right */
+/** Streamlined blue electric locomotive — faces left (towards signal) */
 export const ElectricLoco: FC<SvgProps> = ({ size = 80 }) => (
   <svg
     viewBox="0 0 130 70"
@@ -116,6 +118,7 @@ export const ElectricLoco: FC<SvgProps> = ({ size = 80 }) => (
     xmlns="http://www.w3.org/2000/svg"
     style={{ display: 'block' }}
   >
+    <g transform="translate(130,0) scale(-1,1)">
     {/* ── wheels (2 bogies) ── */}
     <rect x="10" y="53" width="30" height="5" rx="2" fill="#333" />
     <WheelPlain cx={20} cy={62} />
@@ -168,10 +171,11 @@ export const ElectricLoco: FC<SvgProps> = ({ size = 80 }) => (
     <circle cx="125" cy="40" r="4" fill="#FFF176" />
     <circle cx="125" cy="40" r="2.5" fill="#FFEE58" />
     <circle cx="125" cy="48" r="3" fill="#FF5252" />
+    </g>
   </svg>
 )
 
-/** Yellow/black diesel freight locomotive — faces right */
+/** Yellow/black diesel freight locomotive — faces left (towards signal) */
 export const DieselLoco: FC<SvgProps> = ({ size = 80 }) => (
   <svg
     viewBox="0 0 130 70"
@@ -180,6 +184,7 @@ export const DieselLoco: FC<SvgProps> = ({ size = 80 }) => (
     xmlns="http://www.w3.org/2000/svg"
     style={{ display: 'block' }}
   >
+    <g transform="translate(130,0) scale(-1,1)">
     {/* ── wheels (2 bogies) ── */}
     <rect x="8" y="53" width="34" height="5" rx="2" fill="#333" />
     <WheelSpoked cx={18} cy={62} r={9} />
@@ -226,8 +231,9 @@ export const DieselLoco: FC<SvgProps> = ({ size = 80 }) => (
     {/* number board */}
     <rect x="108" y="25" width="14" height="5" rx="1" fill="#333" />
 
-    {/* ── back buffer (right side already nose, left side rear) ── */}
+    {/* ── back buffer ── */}
     <rect x="4" y="37" width="4" height="10" rx="2" fill="#666" />
+    </g>
   </svg>
 )
 
