@@ -126,6 +126,7 @@ export default function App() {
         trainItems={game.trainItems}
         onRemoveItem={removeFromTrain}
         isOver={isOverTrack}
+        isBlocked={isOverTrack && game.atCap && dragging?.item.kind === 'wagon'}
         validation={game.validation}
         phase={game.phase}
       />

@@ -38,7 +38,7 @@ export interface GameState {
   phase: GamePhase
   trainItems: KeyedTrainItem[]
   validation: ValidationResult | null
-  levelDef: (typeof LEVELS)[number]
+  atCap: boolean
   addToTrain: (item: TrainItem) => void
   removeFromTrain: (key: number) => void
   submit: () => void
@@ -139,13 +139,16 @@ export function useGameState(): GameState {
     }
   }, [phase, nextRound])
 
+  const atCap =
+    trainItems.filter((t) => t.kind === 'wagon').length >= levelDef.maxNumber
+
   return {
     task,
     progress,
     phase,
     trainItems,
     validation,
-    levelDef,
+    atCap,
     addToTrain,
     removeFromTrain,
     submit,

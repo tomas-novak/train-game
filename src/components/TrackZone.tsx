@@ -11,12 +11,13 @@ interface Props {
   trainItems: KeyedTrainItem[]
   onRemoveItem: (key: number) => void
   isOver: boolean
+  isBlocked: boolean
   validation: ValidationResult | null
   phase: GamePhase
 }
 
 export const TrackZone = forwardRef<HTMLDivElement, Props>(
-  ({ trainItems, onRemoveItem, isOver, validation, phase }, ref) => {
+  ({ trainItems, onRemoveItem, isOver, isBlocked, validation, phase }, ref) => {
     const isWrong = phase === 'wrong'
 
     // Only highlight wagon type errors on the wagons themselves.
@@ -28,19 +29,29 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
       return !validation.wagonTypeOk
     }
 
+    const hasNoWagons = trainItems.filter((t) => t.kind === 'wagon').length === 0
+    // Show ❌ when count is wrong AND the type is right (or no wagons at all,
+    // where wagonTypeOk is spuriously false because selectedWagonType is null).
     const showCountError =
-      isWrong && validation !== null && validation.wagonTypeOk && !validation.wagonCountOk
+      isWrong &&
+      validation !== null &&
+      !validation.wagonCountOk &&
+      (validation.wagonTypeOk || hasNoWagons)
+
+    const activeOver = isOver && !isBlocked
+    const blockedOver = isOver && isBlocked
 
     return (
       <div
         ref={ref}
         className={[
           'relative w-full transition-all duration-200 overflow-hidden',
-          isOver ? 'ring-4 ring-yellow-400 ring-inset' : '',
+          activeOver ? 'ring-4 ring-yellow-400 ring-inset' : '',
+          blockedOver ? 'ring-4 ring-red-500 ring-inset' : '',
         ].join(' ')}
         style={{
           height: '120px',
-          backgroundColor: isOver ? '#fef08a' : '#57534e',
+          backgroundColor: activeOver ? '#fef08a' : blockedOver ? '#fca5a5' : '#57534e',
           backgroundImage: isOver
             ? undefined
             : 'repeating-linear-gradient(90deg, transparent 0px, transparent 38px, #44403c 38px, #44403c 46px)',
@@ -93,11 +104,14 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
         </div>
 
         {/* Drop hint when dragging over */}
-        {isOver && (
+        {activeOver && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span className="text-3xl font-black text-yellow-600 opacity-60 select-none">
-              ⬇️
-            </span>
+            <span className="text-3xl font-black text-yellow-600 opacity-60 select-none">⬇️</span>
+          </div>
+        )}
+        {blockedOver && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span className="text-3xl select-none">🚫</span>
           </div>
         )}
       </div>
