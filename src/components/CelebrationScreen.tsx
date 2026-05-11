@@ -1,13 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import confetti from 'canvas-confetti'
 
 export function CelebrationScreen() {
-  const firedRef = useRef(false)
-
   useEffect(() => {
-    if (firedRef.current) return
-    firedRef.current = true
-
     const end = Date.now() + 2000
 
     const frame = () => {

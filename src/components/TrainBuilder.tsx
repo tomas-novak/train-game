@@ -1,11 +1,8 @@
 import type { WagonType } from '../types'
 import { WAGONS } from '../data/wagons'
+import { LOCOMOTIVES } from '../data/locomotives'
 
-const LOCO_EMOJIS: Record<string, string> = {
-  steam: '🚂',
-  electric: '🚆',
-  diesel: '🚇',
-}
+const LOCO_EMOJIS = Object.fromEntries(LOCOMOTIVES.map((l) => [l.id, l.emoji]))
 
 interface Props {
   locomotiveId: string | null
