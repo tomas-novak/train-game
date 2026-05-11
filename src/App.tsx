@@ -1,26 +1,87 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import { useGameState } from './hooks/useGameState'
 import { CORRECT_PER_LEVEL } from './data/levels'
 import { TaskDisplay } from './components/TaskDisplay'
-import { LocomotivePicker } from './components/LocomotivePicker'
-import { WagonPicker } from './components/WagonPicker'
-import { TrainBuilder } from './components/TrainBuilder'
+import { DragPalette } from './components/DragPalette'
+import { TrackZone } from './components/TrackZone'
 import { CelebrationScreen } from './components/CelebrationScreen'
+import type { TrainItem } from './types'
+import type { DragStartPayload } from './components/DragPalette'
+
+interface ActiveDrag {
+  item: TrainItem
+  emoji: string
+  x: number
+  y: number
+}
 
 export default function App() {
   const game = useGameState()
-  const mainRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const draggingRef = useRef<ActiveDrag | null>(null)
 
-  const isWrong = game.phase === 'wrong'
-  const locomotiveError = isWrong && game.validation !== null && !game.validation.locomotiveOk
-  const wagonTypeError = isWrong && game.validation !== null && !game.validation.wagonTypeOk
-  const wagonCountError = isWrong && game.validation !== null && !game.validation.wagonCountOk
+  const [dragging, setDragging] = useState<ActiveDrag | null>(null)
+  const [isOverTrack, setIsOverTrack] = useState(false)
+
+  const { addToTrain, removeFromTrain, submit } = game
+
+  const checkOverTrack = useCallback((x: number, y: number): boolean => {
+    if (!trackRef.current) return false
+    const rect = trackRef.current.getBoundingClientRect()
+    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom
+  }, [])
+
+  // Keep ref in sync so event handlers always see latest value
+  useEffect(() => {
+    draggingRef.current = dragging
+  }, [dragging])
 
   useEffect(() => {
-    if (game.phase === 'wrong' && mainRef.current) {
-      mainRef.current.classList.remove('shake')
-      void mainRef.current.offsetWidth
-      mainRef.current.classList.add('shake')
+    const handleMove = (e: PointerEvent) => {
+      if (!draggingRef.current) return
+      setDragging((d) => (d ? { ...d, x: e.clientX, y: e.clientY } : null))
+      setIsOverTrack(checkOverTrack(e.clientX, e.clientY))
+    }
+
+    const handleUp = (e: PointerEvent) => {
+      const d = draggingRef.current
+      if (!d) return
+      if (checkOverTrack(e.clientX, e.clientY)) {
+        addToTrain(d.item)
+      }
+      setDragging(null)
+      setIsOverTrack(false)
+    }
+
+    window.addEventListener('pointermove', handleMove)
+    window.addEventListener('pointerup', handleUp)
+    return () => {
+      window.removeEventListener('pointermove', handleMove)
+      window.removeEventListener('pointerup', handleUp)
+    }
+  }, [checkOverTrack, addToTrain])
+
+  const handleDragStart = useCallback(
+    (payload: DragStartPayload, e: React.PointerEvent) => {
+      const newDrag: ActiveDrag = {
+        item: payload.item,
+        emoji: payload.emoji,
+        x: e.clientX,
+        y: e.clientY,
+      }
+      draggingRef.current = newDrag
+      setDragging(newDrag)
+    },
+    [],
+  )
+
+  // Shake animation on wrong answer
+  useEffect(() => {
+    if (game.phase === 'wrong' && containerRef.current) {
+      containerRef.current.classList.remove('shake')
+      void containerRef.current.offsetWidth
+      containerRef.current.classList.add('shake')
     }
   }, [game.phase])
 
@@ -29,66 +90,71 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-svh bg-gradient-to-b from-yellow-100 to-sky-100 flex flex-col items-center pb-8">
-      <div ref={mainRef} className="w-full max-w-2xl px-4 flex flex-col gap-6">
-
-        {/* Task display */}
+    <div
+      ref={containerRef}
+      className="min-h-svh bg-gradient-to-b from-sky-300 via-sky-100 to-emerald-100 flex flex-col select-none"
+    >
+      {/* Top bar: task left, level+progress right */}
+      <div className="flex items-start justify-between p-3 gap-2">
         <TaskDisplay task={game.task} level={game.progress.level} />
+        <div className="flex flex-col items-end gap-2 pt-1 shrink-0">
+          <div className="text-xl leading-none">{'⭐'.repeat(game.progress.level)}</div>
+          <div className="flex gap-2">
+            {Array.from({ length: CORRECT_PER_LEVEL }).map((_, i) => (
+              <div
+                key={i}
+                className={[
+                  'w-4 h-4 rounded-full transition-all',
+                  i < game.progress.correctInLevel
+                    ? 'bg-green-500 scale-125'
+                    : 'bg-gray-400/60',
+                ].join(' ')}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
 
-        {/* Pick locomotive */}
-        <section className="flex flex-col gap-3">
-          <LocomotivePicker
-            selected={game.locomotiveId}
-            onSelect={game.selectLocomotive}
-            highlight={locomotiveError}
-          />
-        </section>
+      {/* Palette – center of screen */}
+      <div className="flex-1 flex items-center justify-center px-4 py-6">
+        <DragPalette trainItems={game.trainItems} onDragStart={handleDragStart} />
 
-        {/* Pick wagon type */}
-        <section className="flex flex-col gap-3">
-          <WagonPicker
-            selected={game.selectedWagonType}
-            onSelect={game.selectWagonType}
-            highlight={wagonTypeError}
-          />
-        </section>
+      </div>
 
-        {/* Train builder */}
-        <section className="flex flex-col gap-3">
-          <TrainBuilder
-            locomotiveId={game.locomotiveId}
-            selectedWagonType={game.selectedWagonType}
-            wagonCount={game.wagonCount}
-            maxWagons={game.levelDef.maxNumber}
-            onIncrement={game.incrementWagons}
-            onDecrement={game.decrementWagons}
-            countHighlight={wagonCountError}
-          />
-        </section>
+      {/* Track drop zone – full width */}
+      <TrackZone
+        ref={trackRef}
+        trainItems={game.trainItems}
+        onRemoveItem={removeFromTrain}
+        isOver={isOverTrack}
+        validation={game.validation}
+        phase={game.phase}
+      />
 
-        {/* Submit */}
+      {/* Submit button */}
+      <div className="flex justify-center py-4 bg-emerald-100">
         <button
-          onClick={game.submit}
-          className="mx-auto mt-2 text-5xl font-black rounded-3xl px-12 py-5 bg-orange-400 text-white shadow-xl active:scale-95 hover:bg-orange-500 transition-all select-none min-w-[200px]"
+          onClick={submit}
+          className="text-4xl font-black rounded-3xl px-10 py-4 bg-orange-400 text-white shadow-xl active:scale-95 hover:bg-orange-500 transition-all min-w-[180px]"
         >
           🚂 Jet!
         </button>
-
-        {/* Progress dots */}
-        <div className="flex justify-center gap-3 mt-2">
-          {Array.from({ length: CORRECT_PER_LEVEL }).map((_, i) => (
-            <div
-              key={i}
-              className={[
-                'w-5 h-5 rounded-full transition-all',
-                i < game.progress.correctInLevel
-                  ? 'bg-green-500 scale-125'
-                  : 'bg-gray-300',
-              ].join(' ')}
-            />
-          ))}
-        </div>
       </div>
+
+      {/* Drag ghost – follows pointer */}
+      {dragging && (
+        <div
+          className="fixed pointer-events-none z-50 text-6xl"
+          style={{
+            left: dragging.x - 36,
+            top: dragging.y - 36,
+            transform: 'scale(1.25) rotate(-5deg)',
+            filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
+          }}
+        >
+          {dragging.emoji}
+        </div>
+      )}
     </div>
   )
 }
