@@ -65,20 +65,24 @@ export function useGameState(): GameState {
   const selectLocomotive = useCallback((id: string) => {
     setLocomotiveId(id)
     setPhase((p) => (p === 'wrong' ? 'playing' : p))
+    setValidation(null)
   }, [])
 
   const selectWagonType = useCallback((type: WagonType) => {
     setSelectedWagonType(type)
     setWagonCount(0)
     setPhase((p) => (p === 'wrong' ? 'playing' : p))
+    setValidation(null)
   }, [])
 
   const incrementWagons = useCallback(() => {
     setWagonCount((n) => Math.min(n + 1, levelDef.maxNumber))
+    setPhase((p) => (p === 'wrong' ? 'playing' : p))
   }, [levelDef.maxNumber])
 
   const decrementWagons = useCallback(() => {
     setWagonCount((n) => Math.max(n - 1, 0))
+    setPhase((p) => (p === 'wrong' ? 'playing' : p))
   }, [])
 
   const submit = useCallback(() => {

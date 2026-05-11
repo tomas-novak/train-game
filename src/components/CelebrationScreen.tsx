@@ -4,6 +4,7 @@ import confetti from 'canvas-confetti'
 export function CelebrationScreen() {
   useEffect(() => {
     const end = Date.now() + 2000
+    let rafId: number
 
     const frame = () => {
       confetti({
@@ -21,11 +22,14 @@ export function CelebrationScreen() {
         colors: ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff'],
       })
       if (Date.now() < end) {
-        requestAnimationFrame(frame)
+        rafId = requestAnimationFrame(frame)
       }
     }
     frame()
-    return () => { confetti.reset() }
+    return () => {
+      cancelAnimationFrame(rafId)
+      confetti.reset()
+    }
   }, [])
 
   return (
