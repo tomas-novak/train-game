@@ -65,10 +65,7 @@ export function useGameState(): GameState {
           const withoutLoco = prev.filter((t) => t.kind !== 'loco')
           return [keyed, ...withoutLoco]
         }
-        // Enforce wagon count cap
-        const wagonCount = prev.filter((t) => t.kind === 'wagon').length
-        if (wagonCount >= levelDef.maxNumber) return prev
-        // If a different wagon type is already placed, replace all wagons
+        // Type switch resets to 1 wagon (always within cap) — check before cap
         const existingType = (
           prev.find((t) => t.kind === 'wagon') as Extract<KeyedTrainItem, { kind: 'wagon' }> | undefined
         )?.type
@@ -76,6 +73,9 @@ export function useGameState(): GameState {
           const loco = prev.find((t) => t.kind === 'loco')
           return loco ? [loco, keyed] : [keyed]
         }
+        // Same type: enforce wagon count cap
+        const wagonCount = prev.filter((t) => t.kind === 'wagon').length
+        if (wagonCount >= levelDef.maxNumber) return prev
         return [...prev, keyed]
       })
       setPhase((p) => (p === 'wrong' ? 'playing' : p))
