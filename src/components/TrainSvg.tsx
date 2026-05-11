@@ -239,7 +239,7 @@ export const DieselLoco: FC<SvgProps> = ({ size = 80 }) => (
 
 // ── wagons ────────────────────────────────────────────────────────────────────
 
-/** Brown hopper wagon for bulk cargo (coal, sand) */
+/** Dark steel hopper wagon with visible coal cargo */
 export const HopperWagon: FC<SvgProps> = ({ size = 68 }) => (
   <svg
     viewBox="0 0 90 70"
@@ -256,19 +256,29 @@ export const HopperWagon: FC<SvgProps> = ({ size = 68 }) => (
     <WheelPlain cx={56} cy={62} />
     <WheelPlain cx={72} cy={62} />
 
-    {/* ── hopper body (V-shape) ── */}
-    <polygon points="5,16 85,16 78,55 12,55" fill="#8D6E63" />
-    {/* shading */}
-    <polygon points="5,16 45,16 39,55 12,55" fill="#795548" opacity="0.4" />
-    {/* ribs */}
-    <line x1="20" y1="16" x2="15" y2="55" stroke="#5D4037" strokeWidth="2" />
-    <line x1="45" y1="16" x2="45" y2="55" stroke="#5D4037" strokeWidth="2" />
-    <line x1="70" y1="16" x2="75" y2="55" stroke="#5D4037" strokeWidth="2" />
-    {/* top rim */}
-    <rect x="3" y="12" width="84" height="7" rx="2" fill="#6D4C41" />
+    {/* ── hopper body (pronounced V-shape, dark steel) ── */}
+    <polygon points="6,19 84,19 76,54 14,54" fill="#455A64" />
+    {/* inner shadow to emphasise depth */}
+    <polygon points="6,19 46,19 40,54 14,54" fill="#37474F" opacity="0.5" />
+    {/* steel ribs */}
+    <line x1="22" y1="19" x2="17" y2="54" stroke="#546E7A" strokeWidth="2.5" />
+    <line x1="45" y1="19" x2="45" y2="54" stroke="#546E7A" strokeWidth="2.5" />
+    <line x1="68" y1="19" x2="73" y2="54" stroke="#546E7A" strokeWidth="2.5" />
+    {/* yellow safety stripe on rim */}
+    <rect x="3" y="12" width="84" height="8" rx="2" fill="#F9A825" />
+    <line x1="20" y1="12" x2="20" y2="20" stroke="#F57F17" strokeWidth="3" />
+    <line x1="40" y1="12" x2="40" y2="20" stroke="#F57F17" strokeWidth="3" />
+    <line x1="60" y1="12" x2="60" y2="20" stroke="#F57F17" strokeWidth="3" />
+    <line x1="80" y1="12" x2="80" y2="20" stroke="#F57F17" strokeWidth="3" />
+    {/* ── coal cargo visible inside ── */}
+    <ellipse cx="25" cy="19" rx="8" ry="4" fill="#212121" />
+    <ellipse cx="45" cy="17" rx="10" ry="5" fill="#212121" />
+    <ellipse cx="65" cy="19" rx="8" ry="4" fill="#212121" />
+    <ellipse cx="35" cy="15" rx="6" ry="3.5" fill="#37474F" />
+    <ellipse cx="55" cy="15" rx="7" ry="3.5" fill="#37474F" />
     {/* discharge gate */}
-    <rect x="33" y="49" width="24" height="7" rx="2" fill="#4E342E" />
-    <line x1="33" y1="52" x2="57" y2="52" stroke="#6D4C41" strokeWidth="1.5" />
+    <rect x="32" y="49" width="26" height="6" rx="2" fill="#263238" />
+    <line x1="32" y1="52" x2="58" y2="52" stroke="#455A64" strokeWidth="1.5" />
     {/* buffers */}
     <rect x="1" y="36" width="5" height="8" rx="2" fill="#777" />
     <rect x="84" y="36" width="5" height="8" rx="2" fill="#777" />
@@ -322,7 +332,7 @@ export const TankWagon: FC<SvgProps> = ({ size = 68 }) => (
   </svg>
 )
 
-/** Brown box car for packaged goods (apples, parcels) */
+/** Bright orange-yellow box car for packaged goods (apples, parcels) */
 export const BoxWagon: FC<SvgProps> = ({ size = 68 }) => (
   <svg
     viewBox="0 0 90 70"
@@ -339,28 +349,32 @@ export const BoxWagon: FC<SvgProps> = ({ size = 68 }) => (
     <WheelPlain cx={56} cy={62} />
     <WheelPlain cx={72} cy={62} />
 
-    {/* ── car body ── */}
-    <rect x="5" y="16" width="80" height="40" rx="3" fill="#8D6E63" />
-    {/* ── roof ── */}
-    <rect x="3" y="10" width="84" height="9" rx="3" fill="#6D4C41" />
+    {/* ── car body (bright orange-yellow) ── */}
+    <rect x="5" y="16" width="80" height="40" rx="3" fill="#FFA000" />
+    {/* ── roof (darker cap) ── */}
+    <rect x="3" y="10" width="84" height="9" rx="3" fill="#E65100" />
     {/* roof highlight */}
-    <rect x="5" y="11" width="80" height="3" rx="1.5" fill="#795548" opacity="0.5" />
+    <rect x="5" y="11" width="80" height="3" rx="1.5" fill="#FF6D00" opacity="0.5" />
 
-    {/* ── vertical panel lines ── */}
-    <line x1="28" y1="16" x2="28" y2="56" stroke="#6D4C41" strokeWidth="1.5" />
-    <line x1="62" y1="16" x2="62" y2="56" stroke="#6D4C41" strokeWidth="1.5" />
-    {/* diagonal braces */}
-    <line x1="7" y1="16" x2="26" y2="56" stroke="#6D4C41" strokeWidth="1.5" opacity="0.7" />
-    <line x1="64" y1="16" x2="83" y2="56" stroke="#6D4C41" strokeWidth="1.5" opacity="0.7" />
+    {/* ── end panels with X-braces ── */}
+    <rect x="5" y="16" width="20" height="40" rx="2" fill="#FB8C00" />
+    <line x1="5" y1="16" x2="25" y2="56" stroke="#E65100" strokeWidth="2" />
+    <line x1="25" y1="16" x2="5" y2="56" stroke="#E65100" strokeWidth="2" />
+    <rect x="65" y="16" width="20" height="40" rx="2" fill="#FB8C00" />
+    <line x1="65" y1="16" x2="85" y2="56" stroke="#E65100" strokeWidth="2" />
+    <line x1="85" y1="16" x2="65" y2="56" stroke="#E65100" strokeWidth="2" />
 
-    {/* ── sliding door ── */}
-    <rect x="29" y="18" width="32" height="36" rx="2" fill="#795548" />
-    <rect x="30" y="19" width="30" height="34" rx="1" fill="#8D6E63" />
-    {/* door frame */}
-    <rect x="28" y="17" width="34" height="3" rx="1" fill="#5D4037" />
-    <rect x="28" y="52" width="34" height="3" rx="1" fill="#5D4037" />
+    {/* ── large sliding door (centre, brown) ── */}
+    <rect x="26" y="16" width="38" height="40" rx="2" fill="#795548" />
+    <rect x="27" y="17" width="36" height="38" rx="1" fill="#8D6E63" />
+    {/* door X-brace — makes it unmistakably a freight door */}
+    <line x1="27" y1="17" x2="63" y2="55" stroke="#6D4C41" strokeWidth="2.5" />
+    <line x1="63" y1="17" x2="27" y2="55" stroke="#6D4C41" strokeWidth="2.5" />
+    {/* door rail top & bottom */}
+    <rect x="25" y="14" width="40" height="4" rx="1" fill="#5D4037" />
+    <rect x="25" y="52" width="40" height="4" rx="1" fill="#5D4037" />
     {/* door handle */}
-    <rect x="55" y="34" width="5" height="9" rx="2.5" fill="#4E342E" />
+    <rect x="58" y="33" width="5" height="10" rx="2.5" fill="#4E342E" />
 
     {/* ── buffers ── */}
     <rect x="1" y="34" width="5" height="8" rx="2" fill="#777" />
