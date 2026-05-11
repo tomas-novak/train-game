@@ -2,11 +2,13 @@ import { forwardRef } from 'react'
 import type { KeyedTrainItem, ValidationResult } from '../types'
 import { LOCOMOTIVES } from '../data/locomotives'
 import { WAGONS } from '../data/wagons'
-import { SteamLoco, HopperWagon } from './TrainSvg'
 import type { GamePhase } from '../hooks/useGameState'
 
 const LOCO_ICON = Object.fromEntries(LOCOMOTIVES.map((l) => [l.id, l.icon]))
 const WAGON_ICON = Object.fromEntries(WAGONS.map((w) => [w.type, w.icon]))
+
+const PlaceholderLoco = LOCOMOTIVES[0].icon
+const PlaceholderWagon = WAGONS[0].icon
 
 interface Props {
   trainItems: KeyedTrainItem[]
@@ -102,10 +104,10 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
         >
           {trainItems.length === 0 ? (
             <div className="flex gap-2 opacity-20 select-none pointer-events-none items-center">
-              <SteamLoco size={56} />
-              <HopperWagon size={46} />
-              <HopperWagon size={46} />
-              <HopperWagon size={46} />
+              <PlaceholderLoco size={56} />
+              <PlaceholderWagon size={46} />
+              <PlaceholderWagon size={46} />
+              <PlaceholderWagon size={46} />
             </div>
           ) : (
             <>

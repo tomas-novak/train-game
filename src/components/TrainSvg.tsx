@@ -47,61 +47,61 @@ export const SteamLoco: FC<SvgProps> = ({ size = 80 }) => (
     style={{ display: 'block' }}
   >
     <g transform="translate(130,0) scale(-1,1)">
-    {/* ── track/footplate ── */}
-    <rect x="4" y="59" width="122" height="4" rx="1" fill="#555" />
+      {/* ── track/footplate ── */}
+      <rect x="4" y="59" width="122" height="4" rx="1" fill="#555" />
 
-    {/* ── cab (left/rear) ── */}
-    <rect x="4" y="24" width="34" height="35" rx="3" fill="#6D3B1F" />
-    <rect x="3" y="20" width="36" height="8" rx="2" fill="#5A2D10" />
-    {/* cab windows */}
-    <rect x="8" y="28" width="12" height="10" rx="2" fill="#87CEEB" stroke="#3a2010" strokeWidth="1" />
-    <rect x="22" y="28" width="12" height="10" rx="2" fill="#87CEEB" stroke="#3a2010" strokeWidth="1" />
-    {/* cab door */}
-    <rect x="14" y="40" width="14" height="18" rx="2" fill="#5A2D10" />
+      {/* ── cab (left/rear) ── */}
+      <rect x="4" y="24" width="34" height="35" rx="3" fill="#6D3B1F" />
+      <rect x="3" y="20" width="36" height="8" rx="2" fill="#5A2D10" />
+      {/* cab windows */}
+      <rect x="8" y="28" width="12" height="10" rx="2" fill="#87CEEB" stroke="#3a2010" strokeWidth="1" />
+      <rect x="22" y="28" width="12" height="10" rx="2" fill="#87CEEB" stroke="#3a2010" strokeWidth="1" />
+      {/* cab door */}
+      <rect x="14" y="40" width="14" height="18" rx="2" fill="#5A2D10" />
 
-    {/* ── boiler (red, main body) ── */}
-    <rect x="35" y="30" width="70" height="26" rx="7" fill="#C0392B" />
-    {/* boiler front (smokebox) */}
-    <ellipse cx="105" cy="43" rx="13" ry="13" fill="#922B21" />
-    {/* boiler bands */}
-    <line x1="55" y1="30" x2="55" y2="56" stroke="#A93226" strokeWidth="2.5" opacity="0.7" />
-    <line x1="75" y1="30" x2="75" y2="56" stroke="#A93226" strokeWidth="2.5" opacity="0.7" />
-    {/* boiler highlight */}
-    <rect x="37" y="31" width="66" height="5" rx="3" fill="#E74C3C" opacity="0.5" />
+      {/* ── boiler (red, main body) ── */}
+      <rect x="35" y="30" width="70" height="26" rx="7" fill="#C0392B" />
+      {/* boiler front (smokebox) */}
+      <ellipse cx="105" cy="43" rx="13" ry="13" fill="#922B21" />
+      {/* boiler bands */}
+      <line x1="55" y1="30" x2="55" y2="56" stroke="#A93226" strokeWidth="2.5" opacity="0.7" />
+      <line x1="75" y1="30" x2="75" y2="56" stroke="#A93226" strokeWidth="2.5" opacity="0.7" />
+      {/* boiler highlight */}
+      <rect x="37" y="31" width="66" height="5" rx="3" fill="#E74C3C" opacity="0.5" />
 
-    {/* ── steam dome ── */}
-    <ellipse cx="65" cy="29" rx="9" ry="7" fill="#A93226" />
+      {/* ── steam dome ── */}
+      <ellipse cx="65" cy="29" rx="9" ry="7" fill="#A93226" />
 
-    {/* ── chimney (near front of boiler) ── */}
-    <rect x="90" y="12" width="9" height="20" fill="#2c2c2c" />
-    <rect x="86" y="9" width="17" height="5" rx="2.5" fill="#404040" />
+      {/* ── chimney (near front of boiler) ── */}
+      <rect x="90" y="12" width="9" height="20" fill="#2c2c2c" />
+      <rect x="86" y="9" width="17" height="5" rx="2.5" fill="#404040" />
 
-    {/* ── steam puffs ── */}
-    <circle cx="92" cy="5" r="5" fill="white" opacity="0.85" />
-    <circle cx="102" cy="3" r="4" fill="white" opacity="0.65" />
-    <circle cx="110" cy="6" r="3.5" fill="white" opacity="0.45" />
+      {/* ── steam puffs ── */}
+      <circle cx="92" cy="5" r="5" fill="white" opacity="0.85" />
+      <circle cx="102" cy="3" r="4" fill="white" opacity="0.65" />
+      <circle cx="110" cy="6" r="3.5" fill="white" opacity="0.45" />
 
-    {/* ── headlight ── */}
-    <circle cx="116" cy="43" r="5" fill="#FFF176" />
-    <circle cx="116" cy="43" r="3" fill="#FFEE58" />
+      {/* ── headlight ── */}
+      <circle cx="116" cy="43" r="5" fill="#FFF176" />
+      <circle cx="116" cy="43" r="3" fill="#FFEE58" />
 
-    {/* ── cowcatcher (front right) ── */}
-    <line x1="118" y1="55" x2="126" y2="63" stroke="#888" strokeWidth="2.5" strokeLinecap="round" />
-    <line x1="118" y1="59" x2="125" y2="65" stroke="#888" strokeWidth="2" strokeLinecap="round" />
-    <line x1="118" y1="54" x2="128" y2="61" stroke="#888" strokeWidth="2" strokeLinecap="round" />
+      {/* ── cowcatcher (front right) ── */}
+      <line x1="118" y1="55" x2="126" y2="63" stroke="#888" strokeWidth="2.5" strokeLinecap="round" />
+      <line x1="118" y1="59" x2="125" y2="65" stroke="#888" strokeWidth="2" strokeLinecap="round" />
+      <line x1="118" y1="54" x2="128" y2="61" stroke="#888" strokeWidth="2" strokeLinecap="round" />
 
-    {/* ── wheels ── */}
-    {/* rear small (under cab) */}
-    <WheelSpoked cx={20} cy={62} r={9} />
-    {/* large driving wheel */}
-    <WheelSpoked cx={55} cy={62} r={13} />
-    {/* second driving wheel */}
-    <WheelSpoked cx={80} cy={62} r={11} />
-    {/* front small */}
-    <WheelSpoked cx={108} cy={62} r={8} />
+      {/* ── wheels ── */}
+      {/* rear small (under cab) */}
+      <WheelSpoked cx={20} cy={62} r={9} />
+      {/* large driving wheel */}
+      <WheelSpoked cx={55} cy={62} r={13} />
+      {/* second driving wheel */}
+      <WheelSpoked cx={80} cy={62} r={11} />
+      {/* front small */}
+      <WheelSpoked cx={108} cy={62} r={8} />
 
-    {/* connecting rod */}
-    <rect x="22" y="58" width="90" height="4" rx="2" fill="#666" opacity="0.8" />
+      {/* connecting rod */}
+      <rect x="22" y="58" width="90" height="4" rx="2" fill="#666" opacity="0.8" />
     </g>
   </svg>
 )
@@ -116,58 +116,58 @@ export const ElectricLoco: FC<SvgProps> = ({ size = 80 }) => (
     style={{ display: 'block' }}
   >
     <g transform="translate(130,0) scale(-1,1)">
-    {/* ── wheels (2 bogies) ── */}
-    <rect x="10" y="53" width="30" height="5" rx="2" fill="#333" />
-    <WheelPlain cx={20} cy={62} />
-    <WheelPlain cx={34} cy={62} />
-    <rect x="88" y="53" width="30" height="5" rx="2" fill="#333" />
-    <WheelPlain cx={98} cy={62} />
-    <WheelPlain cx={112} cy={62} />
+      {/* ── wheels (2 bogies) ── */}
+      <rect x="10" y="53" width="30" height="5" rx="2" fill="#333" />
+      <WheelPlain cx={20} cy={62} />
+      <WheelPlain cx={34} cy={62} />
+      <rect x="88" y="53" width="30" height="5" rx="2" fill="#333" />
+      <WheelPlain cx={98} cy={62} />
+      <WheelPlain cx={112} cy={62} />
 
-    {/* ── footplate ── */}
-    <rect x="6" y="56" width="118" height="3" rx="1" fill="#555" />
+      {/* ── footplate ── */}
+      <rect x="6" y="56" width="118" height="3" rx="1" fill="#555" />
 
-    {/* ── main body ── */}
-    <path
-      d="M8,24 L8,56 L122,56 L122,24 Q118,18 112,18 L14,18 Q9,18 8,24 Z"
-      fill="#1565C0"
-    />
-    {/* streamlined nose (right) */}
-    <path d="M118,18 Q128,22 128,37 Q128,52 118,56 L122,56 L122,18 Z" fill="#0D47A1" />
-    {/* rear end (left) */}
-    <path d="M14,18 Q6,20 5,37 Q6,54 14,56 L8,56 L8,18 Z" fill="#0D47A1" />
+      {/* ── main body ── */}
+      <path
+        d="M8,24 L8,56 L122,56 L122,24 Q118,18 112,18 L14,18 Q9,18 8,24 Z"
+        fill="#1565C0"
+      />
+      {/* streamlined nose (right) */}
+      <path d="M118,18 Q128,22 128,37 Q128,52 118,56 L122,56 L122,18 Z" fill="#0D47A1" />
+      {/* rear end (left) */}
+      <path d="M14,18 Q6,20 5,37 Q6,54 14,56 L8,56 L8,18 Z" fill="#0D47A1" />
 
-    {/* ── yellow speed stripe ── */}
-    <rect x="5" y="44" width="123" height="8" fill="#FFD600" />
+      {/* ── yellow speed stripe ── */}
+      <rect x="5" y="44" width="123" height="8" fill="#FFD600" />
 
-    {/* ── cab windows (large, front-right) ── */}
-    <rect x="108" y="22" width="14" height="14" rx="3" fill="#B3E5FC" stroke="#0D47A1" strokeWidth="1.5" />
+      {/* ── cab windows (large, front-right) ── */}
+      <rect x="108" y="22" width="14" height="14" rx="3" fill="#B3E5FC" stroke="#0D47A1" strokeWidth="1.5" />
 
-    {/* ── side windows ── */}
-    <rect x="12" y="22" width="11" height="11" rx="2" fill="#B3E5FC" stroke="#0D47A1" strokeWidth="1" />
-    <rect x="27" y="22" width="11" height="11" rx="2" fill="#B3E5FC" stroke="#0D47A1" strokeWidth="1" />
-    <rect x="42" y="22" width="11" height="11" rx="2" fill="#B3E5FC" stroke="#0D47A1" strokeWidth="1" />
-    <rect x="57" y="22" width="11" height="11" rx="2" fill="#B3E5FC" stroke="#0D47A1" strokeWidth="1" />
-    <rect x="72" y="22" width="11" height="11" rx="2" fill="#B3E5FC" stroke="#0D47A1" strokeWidth="1" />
-    <rect x="87" y="22" width="11" height="11" rx="2" fill="#B3E5FC" stroke="#0D47A1" strokeWidth="1" />
+      {/* ── side windows ── */}
+      <rect x="12" y="22" width="11" height="11" rx="2" fill="#B3E5FC" stroke="#0D47A1" strokeWidth="1" />
+      <rect x="27" y="22" width="11" height="11" rx="2" fill="#B3E5FC" stroke="#0D47A1" strokeWidth="1" />
+      <rect x="42" y="22" width="11" height="11" rx="2" fill="#B3E5FC" stroke="#0D47A1" strokeWidth="1" />
+      <rect x="57" y="22" width="11" height="11" rx="2" fill="#B3E5FC" stroke="#0D47A1" strokeWidth="1" />
+      <rect x="72" y="22" width="11" height="11" rx="2" fill="#B3E5FC" stroke="#0D47A1" strokeWidth="1" />
+      <rect x="87" y="22" width="11" height="11" rx="2" fill="#B3E5FC" stroke="#0D47A1" strokeWidth="1" />
 
-    {/* ── roof highlight ── */}
-    <rect x="8" y="18" width="114" height="4" rx="2" fill="#1E88E5" opacity="0.5" />
+      {/* ── roof highlight ── */}
+      <rect x="8" y="18" width="114" height="4" rx="2" fill="#1E88E5" opacity="0.5" />
 
-    {/* ── pantograph ── */}
-    <line x1="42" y1="18" x2="36" y2="10" stroke="#aaa" strokeWidth="1.5" />
-    <line x1="42" y1="18" x2="48" y2="10" stroke="#aaa" strokeWidth="1.5" />
-    <rect x="34" y="8" width="16" height="3" rx="1" fill="#ccc" />
-    <line x1="72" y1="18" x2="66" y2="10" stroke="#aaa" strokeWidth="1.5" />
-    <line x1="72" y1="18" x2="78" y2="10" stroke="#aaa" strokeWidth="1.5" />
-    <rect x="64" y="8" width="16" height="3" rx="1" fill="#ccc" />
-    {/* overhead wire */}
-    <line x1="0" y1="9" x2="130" y2="9" stroke="#bbb" strokeWidth="1" opacity="0.4" />
+      {/* ── pantograph ── */}
+      <line x1="42" y1="18" x2="36" y2="10" stroke="#aaa" strokeWidth="1.5" />
+      <line x1="42" y1="18" x2="48" y2="10" stroke="#aaa" strokeWidth="1.5" />
+      <rect x="34" y="8" width="16" height="3" rx="1" fill="#ccc" />
+      <line x1="72" y1="18" x2="66" y2="10" stroke="#aaa" strokeWidth="1.5" />
+      <line x1="72" y1="18" x2="78" y2="10" stroke="#aaa" strokeWidth="1.5" />
+      <rect x="64" y="8" width="16" height="3" rx="1" fill="#ccc" />
+      {/* overhead wire */}
+      <line x1="0" y1="9" x2="130" y2="9" stroke="#bbb" strokeWidth="1" opacity="0.4" />
 
-    {/* ── headlights ── */}
-    <circle cx="125" cy="40" r="4" fill="#FFF176" />
-    <circle cx="125" cy="40" r="2.5" fill="#FFEE58" />
-    <circle cx="125" cy="48" r="3" fill="#FF5252" />
+      {/* ── headlights ── */}
+      <circle cx="125" cy="40" r="4" fill="#FFF176" />
+      <circle cx="125" cy="40" r="2.5" fill="#FFEE58" />
+      <circle cx="125" cy="48" r="3" fill="#FF5252" />
     </g>
   </svg>
 )
@@ -182,54 +182,54 @@ export const DieselLoco: FC<SvgProps> = ({ size = 80 }) => (
     style={{ display: 'block' }}
   >
     <g transform="translate(130,0) scale(-1,1)">
-    {/* ── wheels (2 bogies) ── */}
-    <rect x="8" y="53" width="34" height="5" rx="2" fill="#333" />
-    <WheelSpoked cx={18} cy={62} r={9} />
-    <WheelSpoked cx={36} cy={62} r={9} />
-    <rect x="86" y="53" width="34" height="5" rx="2" fill="#333" />
-    <WheelSpoked cx={96} cy={62} r={9} />
-    <WheelSpoked cx={114} cy={62} r={9} />
+      {/* ── wheels (2 bogies) ── */}
+      <rect x="8" y="53" width="34" height="5" rx="2" fill="#333" />
+      <WheelSpoked cx={18} cy={62} r={9} />
+      <WheelSpoked cx={36} cy={62} r={9} />
+      <rect x="86" y="53" width="34" height="5" rx="2" fill="#333" />
+      <WheelSpoked cx={96} cy={62} r={9} />
+      <WheelSpoked cx={114} cy={62} r={9} />
 
-    {/* ── footplate ── */}
-    <rect x="5" y="56" width="120" height="3" rx="1" fill="#555" />
+      {/* ── footplate ── */}
+      <rect x="5" y="56" width="120" height="3" rx="1" fill="#555" />
 
-    {/* ── main body ── */}
-    <rect x="6" y="22" width="118" height="35" rx="4" fill="#F9A825" />
-    {/* black accent stripe */}
-    <rect x="6" y="38" width="118" height="7" fill="#212121" />
+      {/* ── main body ── */}
+      <rect x="6" y="22" width="118" height="35" rx="4" fill="#F9A825" />
+      {/* black accent stripe */}
+      <rect x="6" y="38" width="118" height="7" fill="#212121" />
 
-    {/* ── short nose (right/front) ── */}
-    <rect x="106" y="22" width="18" height="35" rx="3" fill="#F57F17" />
-    <rect x="107" y="23" width="16" height="33" rx="2" fill="#F9A825" />
+      {/* ── short nose (right/front) ── */}
+      <rect x="106" y="22" width="18" height="35" rx="3" fill="#F57F17" />
+      <rect x="107" y="23" width="16" height="33" rx="2" fill="#F9A825" />
 
-    {/* ── cab section (left-center) ── */}
-    <rect x="24" y="14" width="40" height="43" rx="3" fill="#F9A825" />
-    <rect x="25" y="15" width="38" height="10" rx="2" fill="#F57F17" />
-    {/* cab windows */}
-    <rect x="27" y="18" width="16" height="11" rx="2" fill="#B3E5FC" stroke="#333" strokeWidth="1" />
-    <rect x="46" y="18" width="14" height="11" rx="2" fill="#B3E5FC" stroke="#333" strokeWidth="1" />
+      {/* ── cab section (left-center) ── */}
+      <rect x="24" y="14" width="40" height="43" rx="3" fill="#F9A825" />
+      <rect x="25" y="15" width="38" height="10" rx="2" fill="#F57F17" />
+      {/* cab windows */}
+      <rect x="27" y="18" width="16" height="11" rx="2" fill="#B3E5FC" stroke="#333" strokeWidth="1" />
+      <rect x="46" y="18" width="14" height="11" rx="2" fill="#B3E5FC" stroke="#333" strokeWidth="1" />
 
-    {/* ── long engine hood (left side) ── */}
-    {/* grille vents */}
-    {[0, 10, 20].map((off) => (
-      <rect key={off} x={7 + off} y={26} width={7} height={20} rx="1.5" fill="#E65100" opacity="0.9" />
-    ))}
-    {/* exhaust stack */}
-    <rect x="35" y="8" width="7" height="14" fill="#2c2c2c" />
-    <rect x="33" y="6" width="11" height="4" rx="2" fill="#3d3d3d" />
-    {/* exhaust puff */}
-    <circle cx="37" cy="3" r="4" fill="#aaa" opacity="0.7" />
-    <circle cx="44" cy="2" r="3" fill="#aaa" opacity="0.5" />
+      {/* ── long engine hood (left side) ── */}
+      {/* grille vents */}
+      {[0, 10, 20].map((off) => (
+        <rect key={off} x={7 + off} y={26} width={7} height={20} rx="1.5" fill="#E65100" opacity="0.9" />
+      ))}
+      {/* exhaust stack */}
+      <rect x="35" y="8" width="7" height="14" fill="#2c2c2c" />
+      <rect x="33" y="6" width="11" height="4" rx="2" fill="#3d3d3d" />
+      {/* exhaust puff */}
+      <circle cx="37" cy="3" r="4" fill="#aaa" opacity="0.7" />
+      <circle cx="44" cy="2" r="3" fill="#aaa" opacity="0.5" />
 
-    {/* ── front details ── */}
-    <circle cx="120" cy="33" r="4" fill="#FFF176" />
-    <circle cx="120" cy="33" r="2.5" fill="#FFEE58" />
-    <circle cx="120" cy="47" r="3" fill="#FF5252" />
-    {/* number board */}
-    <rect x="108" y="25" width="14" height="5" rx="1" fill="#333" />
+      {/* ── front details ── */}
+      <circle cx="120" cy="33" r="4" fill="#FFF176" />
+      <circle cx="120" cy="33" r="2.5" fill="#FFEE58" />
+      <circle cx="120" cy="47" r="3" fill="#FF5252" />
+      {/* number board */}
+      <rect x="108" y="25" width="14" height="5" rx="1" fill="#333" />
 
-    {/* ── back buffer ── */}
-    <rect x="4" y="37" width="4" height="10" rx="2" fill="#666" />
+      {/* ── back buffer ── */}
+      <rect x="4" y="37" width="4" height="10" rx="2" fill="#666" />
     </g>
   </svg>
 )
@@ -379,7 +379,7 @@ export const BoxWagon: FC<SvgProps> = ({ size = 68 }) => (
   </svg>
 )
 
-/** Gray flatcar for cars and containers */
+/** Gray flatcar for cars */
 export const FlatcarWagon: FC<SvgProps> = ({ size = 68 }) => (
   <svg
     viewBox="0 0 90 70"
