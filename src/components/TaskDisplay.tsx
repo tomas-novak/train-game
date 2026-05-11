@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react'
 import type { Task } from '../types'
+import { CARGO } from '../data/cargo'
 import { WAGONS } from '../data/wagons'
 
 interface Props {
   task: Task
 }
 
+const WAGON_GROUPS = WAGONS.map((wagon) => ({
+  wagon,
+  cargoList: CARGO.filter((c) => c.wagonType === wagon.type),
+})).filter((g) => g.cargoList.length > 0)
+
 export function TaskDisplay({ task }: Props) {
   const [showHelp, setShowHelp] = useState(false)
   const Icon = task.cargo.icon
-  const wagon = WAGONS.find((w) => w.type === task.cargo.wagonType)
-  const WagonIcon = wagon?.icon
 
   useEffect(() => {
     if (!showHelp) return
@@ -39,7 +43,7 @@ export function TaskDisplay({ task }: Props) {
           onClick={() => setShowHelp(false)}
         >
           <div
-            className="bg-white rounded-3xl shadow-2xl p-6 flex flex-col items-center gap-4 mx-4 relative"
+            className="bg-white rounded-3xl shadow-2xl p-5 flex flex-col gap-2 mx-4 relative max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -50,20 +54,27 @@ export function TaskDisplay({ task }: Props) {
               ✕
             </button>
 
-            <div className="flex items-center gap-2">
-              <Icon size={56} />
-              <span className="text-3xl font-black text-gray-700">×{task.count}</span>
+            <div className="pr-16 pb-1">
+              {WAGON_GROUPS.map(({ wagon, cargoList }) => {
+                const WagonIcon = wagon.icon
+                const isActive = wagon.type === task.cargo.wagonType
+                return (
+                  <div
+                    key={wagon.type}
+                    className={`flex items-center gap-3 rounded-2xl px-3 py-2 mb-1 ${isActive ? 'bg-yellow-100 ring-2 ring-yellow-400' : ''}`}
+                  >
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {cargoList.map((c) => {
+                        const CargoIcon = c.icon
+                        return <CargoIcon key={c.id} size={36} />
+                      })}
+                    </div>
+                    <span className="text-2xl text-gray-400">→</span>
+                    <WagonIcon size={48} />
+                  </div>
+                )
+              })}
             </div>
-
-            <span className="text-4xl">⬇️</span>
-
-            {WagonIcon && (
-              <div className="flex flex-wrap justify-center gap-2 max-w-xs">
-                {Array.from({ length: task.count }).map((_, i) => (
-                  <WagonIcon key={i} size={48} />
-                ))}
-              </div>
-            )}
           </div>
         </div>
       )}
