@@ -57,16 +57,23 @@ export function TaskDisplay({ task }: Props) {
             <div className="pr-16 pb-1">
               {WAGON_GROUPS.map(({ wagon, cargoList }) => {
                 const WagonIcon = wagon.icon
-                const isActive = wagon.type === task.cargo.wagonType
                 return (
                   <div
                     key={wagon.type}
-                    className={`flex items-center gap-3 rounded-2xl px-3 py-2 mb-1 ${isActive ? 'bg-yellow-100 ring-2 ring-yellow-400' : ''}`}
+                    className="flex items-center gap-3 rounded-2xl px-3 py-2 mb-1"
                   >
                     <div className="flex items-center gap-1 flex-wrap">
                       {cargoList.map((c) => {
                         const CargoIcon = c.icon
-                        return <CargoIcon key={c.id} size={36} />
+                        const isActive = c.id === task.cargo.id
+                        return (
+                          <div
+                            key={c.id}
+                            className={`rounded-xl p-0.5 ${isActive ? 'bg-yellow-100 ring-2 ring-yellow-400' : ''}`}
+                          >
+                            <CargoIcon size={36} />
+                          </div>
+                        )
                       })}
                     </div>
                     <span className="text-2xl text-gray-400">→</span>
