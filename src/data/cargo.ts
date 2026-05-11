@@ -9,4 +9,5 @@ export const CARGO: CargoDef[] = [
   { id: 'parcels', emoji: '📫', wagonType: 'box' },
   { id: 'cars', emoji: '🚙', wagonType: 'flatcar' },
   { id: 'people', emoji: '👨', wagonType: 'passenger' },
+  { id: 'logs', emoji: '🪵', wagonType: 'logcar' },
 ]

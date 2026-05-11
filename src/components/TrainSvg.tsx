@@ -474,3 +474,57 @@ export const PassengerWagon: FC<SvgProps> = ({ size = 68 }) => (
     <rect x="84" y="35" width="5" height="8" rx="2" fill="#777" />
   </svg>
 )
+
+/** Log car — flatcar with bunk stakes and stacked timber logs */
+export const LogcarWagon: FC<SvgProps> = ({ size = 68 }) => (
+  <svg
+    viewBox="0 0 90 70"
+    width={size}
+    height={(size * 70) / 90}
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ display: 'block' }}
+  >
+    {/* ── frame ── */}
+    <rect x="4" y="54" width="82" height="4" rx="1" fill="#555" />
+    {/* ── wheels ── */}
+    <WheelPlain cx={18} cy={62} />
+    <WheelPlain cx={34} cy={62} />
+    <WheelPlain cx={56} cy={62} />
+    <WheelPlain cx={72} cy={62} />
+
+    {/* ── flat deck ── */}
+    <rect x="4" y="47" width="82" height="8" rx="2" fill="#5D4037" />
+
+    {/* ── bunk stakes (hold logs in place) ── */}
+    <rect x="10" y="28" width="6" height="22" rx="2" fill="#4E342E" />
+    <rect x="42" y="28" width="6" height="22" rx="2" fill="#4E342E" />
+    <rect x="74" y="28" width="6" height="22" rx="2" fill="#4E342E" />
+
+    {/* ── logs: bottom row ── */}
+    <ellipse cx="28" cy="44" rx="13" ry="5" fill="#8D6E63" />
+    <ellipse cx="28" cy="44" rx="13" ry="5" fill="#795548" opacity="0.4"/>
+    <ellipse cx="60" cy="44" rx="13" ry="5" fill="#8D6E63" />
+    <ellipse cx="60" cy="44" rx="13" ry="5" fill="#795548" opacity="0.4"/>
+
+    {/* ── logs: middle row ── */}
+    <ellipse cx="19" cy="36" rx="13" ry="5" fill="#A1887F" />
+    <ellipse cx="45" cy="36" rx="13" ry="5" fill="#A1887F" />
+    <ellipse cx="71" cy="36" rx="13" ry="5" fill="#A1887F" />
+
+    {/* ── logs: top row ── */}
+    <ellipse cx="28" cy="28" rx="13" ry="5" fill="#BCAAA4" />
+    <ellipse cx="60" cy="28" rx="13" ry="5" fill="#BCAAA4" />
+
+    {/* ── log end rings (visible end-grain on right) ── */}
+    <ellipse cx="83" cy="36" rx="4" ry="5" fill="#6D4C41" />
+    <ellipse cx="83" cy="36" rx="2" ry="3" fill="#8D6E63" />
+    <ellipse cx="83" cy="44" rx="4" ry="5" fill="#5D4037" />
+    <ellipse cx="83" cy="44" rx="2" ry="3" fill="#795548" />
+    <ellipse cx="83" cy="28" rx="4" ry="5" fill="#795548" />
+    <ellipse cx="83" cy="28" rx="2" ry="3" fill="#A1887F" />
+
+    {/* ── buffers ── */}
+    <rect x="1" y="44" width="4" height="7" rx="2" fill="#777" />
+    <rect x="85" y="44" width="4" height="7" rx="2" fill="#777" />
+  </svg>
+)

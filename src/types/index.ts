@@ -1,6 +1,6 @@
 import type { FC } from 'react'
 
-export type WagonType = 'hopper' | 'tank' | 'box' | 'flatcar' | 'passenger'
+export type WagonType = 'hopper' | 'tank' | 'box' | 'flatcar' | 'passenger' | 'logcar'
 
 export interface TrainIcon {
   size?: number
