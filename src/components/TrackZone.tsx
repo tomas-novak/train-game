@@ -61,8 +61,49 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
         <div className="absolute inset-x-0 top-6 h-3 bg-stone-900 shadow" />
         <div className="absolute inset-x-0 bottom-6 h-3 bg-stone-900 shadow" />
 
-        {/* Scrollable train row */}
-        <div className="absolute inset-0 flex items-center gap-1 px-4 overflow-x-auto overflow-y-hidden">
+        {/* Traffic light at ~10% from left edge */}
+        <div
+          className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none"
+          style={{ left: '10%', transform: 'translateX(-50%)' }}
+        >
+          {/* Signal housing */}
+          <div
+            style={{
+              background: '#1a1a1a',
+              borderRadius: 6,
+              padding: '4px 3px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+              marginTop: 4,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+            }}
+          >
+            {/* Red – active */}
+            <div
+              className="animate-pulse"
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: '50%',
+                background: '#ff2222',
+                boxShadow: '0 0 10px 5px rgba(255,40,40,0.75)',
+              }}
+            />
+            {/* Orange – off */}
+            <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#2c2c2c' }} />
+            {/* Green – off */}
+            <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#2c2c2c' }} />
+          </div>
+          {/* Pole */}
+          <div style={{ flex: 1, width: 4, background: '#666', borderRadius: 2 }} />
+        </div>
+
+        {/* Scrollable train row – starts after traffic light */}
+        <div
+          className="absolute inset-0 flex items-center gap-1 overflow-x-auto overflow-y-hidden"
+          style={{ paddingLeft: 'calc(10% + 36px)', paddingRight: '16px' }}
+        >
           {trainItems.length === 0 ? (
             <div className="flex gap-2 opacity-20 select-none pointer-events-none">
               <span className="text-5xl">🚂</span>
