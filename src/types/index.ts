@@ -41,3 +41,5 @@ export type ValidationResult = {
 export type TrainItem =
   | { kind: 'loco'; id: string }
   | { kind: 'wagon'; type: WagonType }
+
+export type KeyedTrainItem = TrainItem & { _key: number }

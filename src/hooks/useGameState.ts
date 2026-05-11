@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react'
-import type { Task, GameProgress, ValidationResult, TrainItem, WagonType } from '../types'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import type { Task, GameProgress, ValidationResult, TrainItem, KeyedTrainItem, WagonType } from '../types'
 import { LEVELS, CORRECT_PER_LEVEL } from '../data/levels'
 import { validateTrain } from '../utils/validation'
 import { generateTask } from '../utils/random'
@@ -36,11 +36,11 @@ export interface GameState {
   task: Task
   progress: GameProgress
   phase: GamePhase
-  trainItems: TrainItem[]
+  trainItems: KeyedTrainItem[]
   validation: ValidationResult | null
   levelDef: (typeof LEVELS)[number]
   addToTrain: (item: TrainItem) => void
-  removeFromTrain: (index: number) => void
+  removeFromTrain: (key: number) => void
   submit: () => void
   nextRound: () => void
 }
@@ -51,44 +51,51 @@ export function useGameState(): GameState {
     generateTask(LEVELS[initialProgress.level - 1])
   )
   const [phase, setPhase] = useState<GamePhase>('playing')
-  const [trainItems, setTrainItems] = useState<TrainItem[]>([])
+  const [trainItems, setTrainItems] = useState<KeyedTrainItem[]>([])
   const [validation, setValidation] = useState<ValidationResult | null>(null)
+  const keyCounter = useRef(0)
 
   const levelDef = LEVELS[Math.min(progress.level - 1, LEVELS.length - 1)]
 
-  const addToTrain = useCallback((item: TrainItem) => {
-    setTrainItems((prev) => {
-      if (item.kind === 'loco') {
-        const withoutLoco = prev.filter((t) => t.kind !== 'loco')
-        return [item, ...withoutLoco]
-      }
-      // wagon
-      const existingWagonType = (
-        prev.find((t) => t.kind === 'wagon') as Extract<TrainItem, { kind: 'wagon' }> | undefined
-      )?.type
-      if (existingWagonType !== undefined && existingWagonType !== item.type) {
-        // different type: replace all wagons, keep loco
-        const loco = prev.find((t) => t.kind === 'loco')
-        return loco ? [loco, item] : [item]
-      }
-      return [...prev, item]
-    })
-    setPhase((p) => (p === 'wrong' ? 'playing' : p))
-    setValidation(null)
-  }, [])
+  const addToTrain = useCallback(
+    (item: TrainItem) => {
+      setTrainItems((prev) => {
+        const keyed = { ...item, _key: keyCounter.current++ } as KeyedTrainItem
+        if (item.kind === 'loco') {
+          const withoutLoco = prev.filter((t) => t.kind !== 'loco')
+          return [keyed, ...withoutLoco]
+        }
+        // Enforce wagon count cap
+        const wagonCount = prev.filter((t) => t.kind === 'wagon').length
+        if (wagonCount >= levelDef.maxNumber) return prev
+        // If a different wagon type is already placed, replace all wagons
+        const existingType = (
+          prev.find((t) => t.kind === 'wagon') as Extract<KeyedTrainItem, { kind: 'wagon' }> | undefined
+        )?.type
+        if (existingType !== undefined && existingType !== item.type) {
+          const loco = prev.find((t) => t.kind === 'loco')
+          return loco ? [loco, keyed] : [keyed]
+        }
+        return [...prev, keyed]
+      })
+      setPhase((p) => (p === 'wrong' ? 'playing' : p))
+      setValidation(null)
+    },
+    [levelDef.maxNumber],
+  )
 
-  const removeFromTrain = useCallback((index: number) => {
-    setTrainItems((prev) => prev.filter((_, i) => i !== index))
+  const removeFromTrain = useCallback((key: number) => {
+    setTrainItems((prev) => prev.filter((t) => t._key !== key))
     setPhase((p) => (p === 'wrong' ? 'playing' : p))
     setValidation(null)
   }, [])
 
   const submit = useCallback(() => {
     const loco = trainItems.find((t) => t.kind === 'loco') as
-      | Extract<TrainItem, { kind: 'loco' }>
+      | Extract<KeyedTrainItem, { kind: 'loco' }>
       | undefined
     const wagonItems = trainItems.filter((t) => t.kind === 'wagon') as Extract<
-      TrainItem,
+      KeyedTrainItem,
       { kind: 'wagon' }
     >[]
     const locomotiveId = loco?.id ?? null

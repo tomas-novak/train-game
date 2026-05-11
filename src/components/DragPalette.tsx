@@ -1,4 +1,4 @@
-import type { TrainItem, WagonType } from '../types'
+import type { KeyedTrainItem, TrainItem } from '../types'
 import { LOCOMOTIVES } from '../data/locomotives'
 import { WAGONS } from '../data/wagons'
 
@@ -8,7 +8,7 @@ export interface DragStartPayload {
 }
 
 interface Props {
-  trainItems: TrainItem[]
+  trainItems: KeyedTrainItem[]
   onDragStart: (payload: DragStartPayload, e: React.PointerEvent) => void
 }
 
@@ -39,7 +39,7 @@ function PaletteItem({ emoji, dimmed, onPointerDown }: PaletteItemProps) {
 export function DragPalette({ trainItems, onDragStart }: Props) {
   const hasLoco = trainItems.some((t) => t.kind === 'loco')
   const placedWagonType = (
-    trainItems.find((t) => t.kind === 'wagon') as Extract<TrainItem, { kind: 'wagon' }> | undefined
+    trainItems.find((t) => t.kind === 'wagon') as Extract<KeyedTrainItem, { kind: 'wagon' }> | undefined
   )?.type
 
   return (
@@ -65,8 +65,7 @@ export function DragPalette({ trainItems, onDragStart }: Props) {
       {/* Wagons */}
       <div className="flex gap-3 justify-center flex-wrap">
         {WAGONS.map((wagon) => {
-          const dimmed =
-            placedWagonType !== undefined && placedWagonType !== (wagon.type as WagonType)
+          const dimmed = placedWagonType !== undefined && placedWagonType !== wagon.type
           return (
             <PaletteItem
               key={wagon.type}

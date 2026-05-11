@@ -96,7 +96,7 @@ export default function App() {
     >
       {/* Top bar: task left, level+progress right */}
       <div className="flex items-start justify-between p-3 gap-2">
-        <TaskDisplay task={game.task} level={game.progress.level} />
+        <TaskDisplay task={game.task} />
         <div className="flex flex-col items-end gap-2 pt-1 shrink-0">
           <div className="text-xl leading-none">{'⭐'.repeat(game.progress.level)}</div>
           <div className="flex gap-2">
@@ -118,7 +118,6 @@ export default function App() {
       {/* Palette – center of screen */}
       <div className="flex-1 flex items-center justify-center px-4 py-6">
         <DragPalette trainItems={game.trainItems} onDragStart={handleDragStart} />
-
       </div>
 
       {/* Track drop zone – full width */}

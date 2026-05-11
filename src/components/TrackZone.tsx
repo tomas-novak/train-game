@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import type { TrainItem, ValidationResult } from '../types'
+import type { KeyedTrainItem, ValidationResult } from '../types'
 import { LOCOMOTIVES } from '../data/locomotives'
 import { WAGONS } from '../data/wagons'
 import type { GamePhase } from '../hooks/useGameState'
@@ -8,8 +8,8 @@ const LOCO_EMOJI = Object.fromEntries(LOCOMOTIVES.map((l) => [l.id, l.emoji]))
 const WAGON_EMOJI = Object.fromEntries(WAGONS.map((w) => [w.type, w.emoji]))
 
 interface Props {
-  trainItems: TrainItem[]
-  onRemoveItem: (index: number) => void
+  trainItems: KeyedTrainItem[]
+  onRemoveItem: (key: number) => void
   isOver: boolean
   validation: ValidationResult | null
   phase: GamePhase
@@ -19,11 +19,17 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
   ({ trainItems, onRemoveItem, isOver, validation, phase }, ref) => {
     const isWrong = phase === 'wrong'
 
-    function itemError(item: TrainItem): boolean {
+    // Only highlight wagon type errors on the wagons themselves.
+    // Count errors are shown as a separate indicator so the child
+    // isn't confused into thinking the wagon type is wrong.
+    function itemError(item: KeyedTrainItem): boolean {
       if (!isWrong || !validation) return false
       if (item.kind === 'loco') return !validation.locomotiveOk
-      return !validation.wagonTypeOk || !validation.wagonCountOk
+      return !validation.wagonTypeOk
     }
+
+    const showCountError =
+      isWrong && validation !== null && validation.wagonTypeOk && !validation.wagonCountOk
 
     return (
       <div
@@ -54,28 +60,35 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
               <span className="text-4xl">🟫</span>
             </div>
           ) : (
-            trainItems.map((item, i) => {
-              const emoji =
-                item.kind === 'loco' ? LOCO_EMOJI[item.id] : WAGON_EMOJI[item.type]
-              const hasError = itemError(item)
-              return (
-                <button
-                  key={i}
-                  onClick={() => onRemoveItem(i)}
-                  className={[
-                    'shrink-0 rounded-xl p-1 transition-all duration-150 touch-none select-none',
-                    'active:scale-90 cursor-pointer',
-                    hasError
-                      ? 'bg-red-400/80 animate-bounce'
-                      : 'hover:bg-white/20 active:bg-white/30',
-                    item.kind === 'loco' ? 'text-5xl' : 'text-4xl',
-                  ].join(' ')}
-                  title="Klikni pro odebrání"
-                >
-                  {emoji}
-                </button>
-              )
-            })
+            <>
+              {trainItems.map((item) => {
+                const emoji =
+                  item.kind === 'loco' ? LOCO_EMOJI[item.id] : WAGON_EMOJI[item.type]
+                const hasError = itemError(item)
+                return (
+                  <button
+                    key={item._key}
+                    onClick={() => onRemoveItem(item._key)}
+                    className={[
+                      'shrink-0 rounded-xl p-1 transition-all duration-150 touch-none select-none',
+                      'active:scale-90 cursor-pointer',
+                      hasError
+                        ? 'bg-red-400/80 animate-bounce'
+                        : 'hover:bg-white/20 active:bg-white/30',
+                      item.kind === 'loco' ? 'text-5xl' : 'text-4xl',
+                    ].join(' ')}
+                  >
+                    {emoji}
+                  </button>
+                )
+              })}
+              {/* Count error: show a pulsing ❌ after the wagons */}
+              {showCountError && (
+                <span className="shrink-0 text-3xl animate-bounce select-none pointer-events-none">
+                  ❌
+                </span>
+              )}
+            </>
           )}
         </div>
 
