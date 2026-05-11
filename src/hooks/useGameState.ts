@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react'
-import type { Task, GameProgress, WagonType, ValidationResult } from '../types'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import type { Task, GameProgress, ValidationResult, TrainItem, KeyedTrainItem, WagonType } from '../types'
 import { LEVELS, CORRECT_PER_LEVEL } from '../data/levels'
 import { validateTrain } from '../utils/validation'
 import { generateTask } from '../utils/random'
@@ -36,15 +36,11 @@ export interface GameState {
   task: Task
   progress: GameProgress
   phase: GamePhase
-  locomotiveId: string | null
-  selectedWagonType: WagonType | null
-  wagonCount: number
+  trainItems: KeyedTrainItem[]
   validation: ValidationResult | null
-  levelDef: (typeof LEVELS)[number]
-  selectLocomotive: (id: string) => void
-  selectWagonType: (type: WagonType) => void
-  incrementWagons: () => void
-  decrementWagons: () => void
+  atCap: boolean
+  addToTrain: (item: TrainItem) => void
+  removeFromTrain: (key: number) => void
   submit: () => void
   nextRound: () => void
 }
@@ -55,37 +51,66 @@ export function useGameState(): GameState {
     generateTask(LEVELS[initialProgress.level - 1])
   )
   const [phase, setPhase] = useState<GamePhase>('playing')
-  const [locomotiveId, setLocomotiveId] = useState<string | null>(null)
-  const [selectedWagonType, setSelectedWagonType] = useState<WagonType | null>(null)
-  const [wagonCount, setWagonCount] = useState(0)
+  const [trainItems, setTrainItems] = useState<KeyedTrainItem[]>([])
   const [validation, setValidation] = useState<ValidationResult | null>(null)
+  const keyCounter = useRef(0)
+  const trainChangedRef = useRef(false)
 
   const levelDef = LEVELS[Math.min(progress.level - 1, LEVELS.length - 1)]
 
-  const selectLocomotive = useCallback((id: string) => {
-    setLocomotiveId(id)
+  const addToTrain = useCallback(
+    (item: TrainItem) => {
+      trainChangedRef.current = false
+      setTrainItems((prev) => {
+        const keyed = { ...item, _key: keyCounter.current++ } as KeyedTrainItem
+        if (item.kind === 'loco') {
+          trainChangedRef.current = true
+          const withoutLoco = prev.filter((t) => t.kind !== 'loco')
+          return [keyed, ...withoutLoco]
+        }
+        // Type switch resets to 1 wagon (always within cap) — check before cap
+        const existingType = (
+          prev.find((t) => t.kind === 'wagon') as Extract<KeyedTrainItem, { kind: 'wagon' }> | undefined
+        )?.type
+        if (existingType !== undefined && existingType !== item.type) {
+          trainChangedRef.current = true
+          const loco = prev.find((t) => t.kind === 'loco')
+          return loco ? [loco, keyed] : [keyed]
+        }
+        // Same type: enforce wagon count cap
+        const wagonCount = prev.filter((t) => t.kind === 'wagon').length
+        if (wagonCount >= levelDef.maxNumber) return prev
+        trainChangedRef.current = true
+        return [...prev, keyed]
+      })
+      // Only clear error state when train actually changed — a cap-blocked
+      // drop must not erase the validation highlights the child is reading.
+      if (trainChangedRef.current) {
+        setPhase((p) => (p === 'wrong' ? 'playing' : p))
+        setValidation(null)
+      }
+    },
+    [levelDef.maxNumber],
+  )
+
+  const removeFromTrain = useCallback((key: number) => {
+    setTrainItems((prev) => prev.filter((t) => t._key !== key))
     setPhase((p) => (p === 'wrong' ? 'playing' : p))
     setValidation(null)
-  }, [])
-
-  const selectWagonType = useCallback((type: WagonType) => {
-    setSelectedWagonType(type)
-    setWagonCount(0)
-    setPhase((p) => (p === 'wrong' ? 'playing' : p))
-    setValidation(null)
-  }, [])
-
-  const incrementWagons = useCallback(() => {
-    setWagonCount((n) => Math.min(n + 1, levelDef.maxNumber))
-    setPhase((p) => (p === 'wrong' ? 'playing' : p))
-  }, [levelDef.maxNumber])
-
-  const decrementWagons = useCallback(() => {
-    setWagonCount((n) => Math.max(n - 1, 0))
-    setPhase((p) => (p === 'wrong' ? 'playing' : p))
   }, [])
 
   const submit = useCallback(() => {
+    const loco = trainItems.find((t) => t.kind === 'loco') as
+      | Extract<KeyedTrainItem, { kind: 'loco' }>
+      | undefined
+    const wagonItems = trainItems.filter((t) => t.kind === 'wagon') as Extract<
+      KeyedTrainItem,
+      { kind: 'wagon' }
+    >[]
+    const locomotiveId = loco?.id ?? null
+    const selectedWagonType: WagonType | null = wagonItems[0]?.type ?? null
+    const wagonCount = wagonItems.length
+
     const result = validateTrain(task, locomotiveId, selectedWagonType, wagonCount)
     setValidation(result)
     if (result.allCorrect) {
@@ -93,7 +118,7 @@ export function useGameState(): GameState {
     } else {
       setPhase('wrong')
     }
-  }, [task, locomotiveId, selectedWagonType, wagonCount])
+  }, [task, trainItems])
 
   const nextRound = useCallback(() => {
     const newProgress = { ...progress }
@@ -109,14 +134,11 @@ export function useGameState(): GameState {
     }
     const nextLevelDef = LEVELS[Math.min(newProgress.level - 1, LEVELS.length - 1)]
     setTask(generateTask(nextLevelDef))
-    setLocomotiveId(null)
-    setSelectedWagonType(null)
-    setWagonCount(0)
+    setTrainItems([])
     setValidation(null)
     setPhase('playing')
   }, [phase, progress])
 
-  // Auto-advance after celebration
   useEffect(() => {
     if (phase === 'celebrating') {
       const timer = setTimeout(() => {
@@ -126,19 +148,18 @@ export function useGameState(): GameState {
     }
   }, [phase, nextRound])
 
+  const atCap =
+    trainItems.filter((t) => t.kind === 'wagon').length >= levelDef.maxNumber
+
   return {
     task,
     progress,
     phase,
-    locomotiveId,
-    selectedWagonType,
-    wagonCount,
+    trainItems,
     validation,
-    levelDef,
-    selectLocomotive,
-    selectWagonType,
-    incrementWagons,
-    decrementWagons,
+    atCap,
+    addToTrain,
+    removeFromTrain,
     submit,
     nextRound,
   }
