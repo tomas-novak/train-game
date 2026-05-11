@@ -120,6 +120,15 @@ export default function App() {
         <DragPalette trainItems={game.trainItems} onDragStart={handleDragStart} />
       </div>
 
+      {/* Drag hint arrow – visible until first item is placed */}
+      {game.trainItems.length === 0 && (
+        <div className="flex justify-center pb-1 pointer-events-none select-none">
+          <span className="text-4xl animate-bounce" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>
+            ⬇️
+          </span>
+        </div>
+      )}
+
       {/* Track drop zone – full width */}
       <TrackZone
         ref={trackRef}
