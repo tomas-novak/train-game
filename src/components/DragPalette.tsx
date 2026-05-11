@@ -1,10 +1,11 @@
-import type { KeyedTrainItem, TrainItem } from '../types'
+import type { FC } from 'react'
+import type { KeyedTrainItem, TrainItem, TrainIcon } from '../types'
 import { LOCOMOTIVES } from '../data/locomotives'
 import { WAGONS } from '../data/wagons'
 
 export interface DragStartPayload {
   item: TrainItem
-  emoji: string
+  Icon: FC<TrainIcon>
 }
 
 interface Props {
@@ -13,16 +14,17 @@ interface Props {
 }
 
 interface PaletteItemProps {
-  emoji: string
+  Icon: FC<TrainIcon>
+  iconSize: number
   dimmed: boolean
   onPointerDown: (e: React.PointerEvent) => void
 }
 
-function PaletteItem({ emoji, dimmed, onPointerDown }: PaletteItemProps) {
+function PaletteItem({ Icon, iconSize, dimmed, onPointerDown }: PaletteItemProps) {
   return (
     <div
       className={[
-        'text-5xl bg-white rounded-2xl p-3 min-w-[72px] min-h-[72px]',
+        'bg-white rounded-2xl p-2 min-w-[80px] min-h-[68px]',
         'flex items-center justify-center shadow-md border-2 border-gray-200',
         'cursor-grab active:cursor-grabbing touch-none select-none transition-all duration-150',
         dimmed
@@ -31,7 +33,7 @@ function PaletteItem({ emoji, dimmed, onPointerDown }: PaletteItemProps) {
       ].join(' ')}
       onPointerDown={onPointerDown}
     >
-      {emoji}
+      <Icon size={iconSize} />
     </div>
   )
 }
@@ -49,11 +51,12 @@ export function DragPalette({ trainItems, onDragStart }: Props) {
         {LOCOMOTIVES.map((loco) => (
           <PaletteItem
             key={loco.id}
-            emoji={loco.emoji}
+            Icon={loco.icon}
+            iconSize={72}
             dimmed={hasLoco}
             onPointerDown={(e) => {
               e.preventDefault()
-              onDragStart({ item: { kind: 'loco', id: loco.id }, emoji: loco.emoji }, e)
+              onDragStart({ item: { kind: 'loco', id: loco.id }, Icon: loco.icon }, e)
             }}
           />
         ))}
@@ -69,12 +72,13 @@ export function DragPalette({ trainItems, onDragStart }: Props) {
           return (
             <PaletteItem
               key={wagon.type}
-              emoji={wagon.emoji}
+              Icon={wagon.icon}
+              iconSize={60}
               dimmed={dimmed}
               onPointerDown={(e) => {
                 e.preventDefault()
                 onDragStart(
-                  { item: { kind: 'wagon', type: wagon.type }, emoji: wagon.emoji },
+                  { item: { kind: 'wagon', type: wagon.type }, Icon: wagon.icon },
                   e,
                 )
               }}

@@ -7,11 +7,11 @@ export const LEVELS: LevelDef[] = [
   },
   {
     maxNumber: 5,
-    cargoIds: ['coal', 'sand', 'milk', 'fuel', 'apples', 'parcels', 'cars'],
+    cargoIds: ['coal', 'sand', 'milk', 'fuel', 'apples', 'parcels', 'cars', 'logs'],
   },
   {
     maxNumber: 10,
-    cargoIds: ['coal', 'sand', 'milk', 'fuel', 'apples', 'parcels', 'cars', 'people'],
+    cargoIds: ['coal', 'sand', 'milk', 'fuel', 'apples', 'parcels', 'cars', 'logs', 'people'],
   },
 ]
 
