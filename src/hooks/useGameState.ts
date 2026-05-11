@@ -54,14 +54,17 @@ export function useGameState(): GameState {
   const [trainItems, setTrainItems] = useState<KeyedTrainItem[]>([])
   const [validation, setValidation] = useState<ValidationResult | null>(null)
   const keyCounter = useRef(0)
+  const trainChangedRef = useRef(false)
 
   const levelDef = LEVELS[Math.min(progress.level - 1, LEVELS.length - 1)]
 
   const addToTrain = useCallback(
     (item: TrainItem) => {
+      trainChangedRef.current = false
       setTrainItems((prev) => {
         const keyed = { ...item, _key: keyCounter.current++ } as KeyedTrainItem
         if (item.kind === 'loco') {
+          trainChangedRef.current = true
           const withoutLoco = prev.filter((t) => t.kind !== 'loco')
           return [keyed, ...withoutLoco]
         }
@@ -70,16 +73,22 @@ export function useGameState(): GameState {
           prev.find((t) => t.kind === 'wagon') as Extract<KeyedTrainItem, { kind: 'wagon' }> | undefined
         )?.type
         if (existingType !== undefined && existingType !== item.type) {
+          trainChangedRef.current = true
           const loco = prev.find((t) => t.kind === 'loco')
           return loco ? [loco, keyed] : [keyed]
         }
         // Same type: enforce wagon count cap
         const wagonCount = prev.filter((t) => t.kind === 'wagon').length
         if (wagonCount >= levelDef.maxNumber) return prev
+        trainChangedRef.current = true
         return [...prev, keyed]
       })
-      setPhase((p) => (p === 'wrong' ? 'playing' : p))
-      setValidation(null)
+      // Only clear error state when train actually changed — a cap-blocked
+      // drop must not erase the validation highlights the child is reading.
+      if (trainChangedRef.current) {
+        setPhase((p) => (p === 'wrong' ? 'playing' : p))
+        setValidation(null)
+      }
     },
     [levelDef.maxNumber],
   )

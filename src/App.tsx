@@ -126,7 +126,12 @@ export default function App() {
         trainItems={game.trainItems}
         onRemoveItem={removeFromTrain}
         isOver={isOverTrack}
-        isBlocked={isOverTrack && game.atCap && dragging?.item.kind === 'wagon'}
+        isBlocked={(() => {
+          if (!isOverTrack || !game.atCap || dragging?.item.kind !== 'wagon') return false
+          // Type-switch drags are always allowed even at cap — don't show 🚫
+          const placedType = game.trainItems.find((t) => t.kind === 'wagon')?.type ?? null
+          return placedType === null || dragging.item.type === placedType
+        })()}
         validation={game.validation}
         phase={game.phase}
       />
