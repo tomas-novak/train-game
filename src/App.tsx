@@ -21,7 +21,7 @@ export default function App() {
       void mainRef.current.offsetWidth
       mainRef.current.classList.add('shake')
     }
-  }, [game.phase, game.validation])
+  }, [game.phase])
 
   if (game.phase === 'celebrating') {
     return <CelebrationScreen />
@@ -58,6 +58,7 @@ export default function App() {
             locomotiveId={game.locomotiveId}
             selectedWagonType={game.selectedWagonType}
             wagonCount={game.wagonCount}
+            maxWagons={game.levelDef.maxNumber}
             onIncrement={game.incrementWagons}
             onDecrement={game.decrementWagons}
             countHighlight={wagonCountError}

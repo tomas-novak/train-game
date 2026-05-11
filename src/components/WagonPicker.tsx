@@ -8,13 +8,10 @@ interface Props {
   highlight: boolean
 }
 
-const WAGON_CARGO_MAP: Record<WagonType, string[]> = {
-  hopper: [],
-  tank: [],
-  box: [],
-  flatcar: [],
-  passenger: [],
-}
+const WAGON_CARGO_MAP: Record<WagonType, string[]> = WAGONS.reduce(
+  (acc, w) => ({ ...acc, [w.type]: [] }),
+  {} as Record<WagonType, string[]>,
+)
 for (const cargo of CARGO) {
   WAGON_CARGO_MAP[cargo.wagonType].push(cargo.emoji)
 }
@@ -39,7 +36,7 @@ export function WagonPicker({ selected, onSelect, highlight }: Props) {
             ].join(' ')}
           >
             <span className="text-4xl leading-none">{wagon.emoji}</span>
-            <span className="text-xs leading-none">{cargoEmojis.join(' ')}</span>
+            <span className="text-sm leading-none">{cargoEmojis.join(' ')}</span>
           </button>
         )
       })}

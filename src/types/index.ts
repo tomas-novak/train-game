@@ -8,7 +8,6 @@ export interface Locomotive {
 export interface WagonDef {
   type: WagonType
   emoji: string
-  color: string
 }
 
 export interface CargoDef {

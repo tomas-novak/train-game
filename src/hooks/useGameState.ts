@@ -46,7 +46,10 @@ export interface GameState {
 
 export function useGameState(): GameState {
   const [progress, setProgress] = useState<GameProgress>(loadProgress)
-  const [task, setTask] = useState<Task>(() => generateTask(LEVELS[loadProgress().level - 1]))
+  const [task, setTask] = useState<Task>(() => {
+    const p = loadProgress()
+    return generateTask(LEVELS[Math.min(p.level - 1, LEVELS.length - 1)])
+  })
   const [phase, setPhase] = useState<GamePhase>('playing')
   const [locomotiveId, setLocomotiveId] = useState<string | null>(null)
   const [selectedWagonType, setSelectedWagonType] = useState<WagonType | null>(null)
@@ -65,8 +68,8 @@ export function useGameState(): GameState {
   }, [])
 
   const incrementWagons = useCallback(() => {
-    setWagonCount((n) => Math.min(n + 1, 10))
-  }, [])
+    setWagonCount((n) => Math.min(n + 1, levelDef.maxNumber))
+  }, [levelDef.maxNumber])
 
   const decrementWagons = useCallback(() => {
     setWagonCount((n) => Math.max(n - 1, 0))

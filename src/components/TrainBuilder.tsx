@@ -1,10 +1,17 @@
 import type { WagonType } from '../types'
 import { WAGONS } from '../data/wagons'
 
+const LOCO_EMOJIS: Record<string, string> = {
+  steam: '🚂',
+  electric: '🚆',
+  diesel: '🚇',
+}
+
 interface Props {
   locomotiveId: string | null
   selectedWagonType: WagonType | null
   wagonCount: number
+  maxWagons: number
   onIncrement: () => void
   onDecrement: () => void
   countHighlight: boolean
@@ -14,17 +21,12 @@ export function TrainBuilder({
   locomotiveId,
   selectedWagonType,
   wagonCount,
+  maxWagons,
   onIncrement,
   onDecrement,
   countHighlight,
 }: Props) {
   const wagonDef = WAGONS.find((w) => w.type === selectedWagonType)
-
-  const locoEmojis: Record<string, string> = {
-    steam: '🚂',
-    electric: '🚆',
-    diesel: '🚇',
-  }
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -32,7 +34,7 @@ export function TrainBuilder({
       <div className="w-full overflow-x-auto">
         <div className="flex items-end gap-1 min-h-[72px] px-4 py-2 bg-white rounded-2xl shadow-inner border-2 border-gray-100 min-w-fit mx-auto">
           {locomotiveId ? (
-            <span className="text-5xl leading-none shrink-0">{locoEmojis[locomotiveId]}</span>
+            <span className="text-5xl leading-none shrink-0">{LOCO_EMOJIS[locomotiveId]}</span>
           ) : (
             <span className="text-5xl leading-none opacity-20 shrink-0">🚂</span>
           )}
@@ -71,7 +73,7 @@ export function TrainBuilder({
 
         <button
           onClick={onIncrement}
-          disabled={wagonCount === 10}
+          disabled={wagonCount === maxWagons}
           className="text-4xl font-black rounded-full w-16 h-16 bg-green-500 text-white flex items-center justify-center shadow-lg active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
         >
           +
