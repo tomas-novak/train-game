@@ -12,7 +12,10 @@ function loadProgress(): GameProgress {
     if (raw) {
       const parsed = JSON.parse(raw) as GameProgress
       if (typeof parsed.level === 'number' && typeof parsed.correctInLevel === 'number') {
-        return parsed
+        return {
+          level: Math.min(Math.max(1, parsed.level), LEVELS.length),
+          correctInLevel: Math.max(0, parsed.correctInLevel),
+        }
       }
     }
   } catch {

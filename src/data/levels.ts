@@ -9,7 +9,7 @@ export const LEVELS: LevelDef[] = [
   {
     level: 2,
     maxNumber: 5,
-    cargoIds: ['coal', 'sand', 'milk', 'fuel', 'apples', 'parcels', 'cars', 'people'],
+    cargoIds: ['coal', 'sand', 'milk', 'fuel', 'apples', 'parcels', 'cars'],
   },
   {
     level: 3,
