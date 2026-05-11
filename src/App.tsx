@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react'
 import { useGameState } from './hooks/useGameState'
+import { CORRECT_PER_LEVEL } from './data/levels'
 import { TaskDisplay } from './components/TaskDisplay'
 import { LocomotivePicker } from './components/LocomotivePicker'
 import { WagonPicker } from './components/WagonPicker'
@@ -75,7 +76,7 @@ export default function App() {
 
         {/* Progress dots */}
         <div className="flex justify-center gap-3 mt-2">
-          {Array.from({ length: 3 }).map((_, i) => (
+          {Array.from({ length: CORRECT_PER_LEVEL }).map((_, i) => (
             <div
               key={i}
               className={[

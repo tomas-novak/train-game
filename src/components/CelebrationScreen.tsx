@@ -30,6 +30,7 @@ export function CelebrationScreen() {
       }
     }
     frame()
+    return () => { confetti.reset() }
   }, [])
 
   return (

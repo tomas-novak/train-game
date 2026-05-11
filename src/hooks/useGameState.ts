@@ -28,6 +28,8 @@ function saveProgress(progress: GameProgress) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
 }
 
+const initialProgress = loadProgress()
+
 export type GamePhase = 'playing' | 'celebrating' | 'wrong'
 
 export interface GameState {
@@ -48,11 +50,10 @@ export interface GameState {
 }
 
 export function useGameState(): GameState {
-  const [progress, setProgress] = useState<GameProgress>(loadProgress)
-  const [task, setTask] = useState<Task>(() => {
-    const p = loadProgress()
-    return generateTask(LEVELS[Math.min(p.level - 1, LEVELS.length - 1)])
-  })
+  const [progress, setProgress] = useState<GameProgress>(initialProgress)
+  const [task, setTask] = useState<Task>(() =>
+    generateTask(LEVELS[initialProgress.level - 1])
+  )
   const [phase, setPhase] = useState<GamePhase>('playing')
   const [locomotiveId, setLocomotiveId] = useState<string | null>(null)
   const [selectedWagonType, setSelectedWagonType] = useState<WagonType | null>(null)
