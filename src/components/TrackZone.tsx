@@ -64,7 +64,7 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
         {/* Traffic light at ~10% from left edge */}
         <div
           className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none"
-          style={{ left: '10%', transform: 'translateX(-50%)', zIndex: 10 }}
+          style={{ left: '10%', transform: 'translateX(-50%)' }}
         >
           {/* Signal housing */}
           <div
@@ -81,6 +81,7 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
           >
             {/* Red – active */}
             <div
+              className="animate-pulse"
               style={{
                 width: 18,
                 height: 18,
@@ -101,7 +102,7 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
         {/* Scrollable train row – starts after traffic light */}
         <div
           className="absolute inset-0 flex items-center gap-1 overflow-x-auto overflow-y-hidden"
-          style={{ paddingLeft: 'calc(10% + 28px)', paddingRight: '16px' }}
+          style={{ paddingLeft: 'calc(10% + 36px)', paddingRight: '16px' }}
         >
           {trainItems.length === 0 ? (
             <div className="flex gap-2 opacity-20 select-none pointer-events-none">
