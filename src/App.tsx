@@ -5,12 +5,13 @@ import { TaskDisplay } from './components/TaskDisplay'
 import { DragPalette } from './components/DragPalette'
 import { TrackZone } from './components/TrackZone'
 import { CelebrationScreen } from './components/CelebrationScreen'
-import type { TrainItem } from './types'
+import type { TrainItem, TrainIcon } from './types'
 import type { DragStartPayload } from './components/DragPalette'
+import type { FC } from 'react'
 
 interface ActiveDrag {
   item: TrainItem
-  emoji: string
+  Icon: FC<TrainIcon>
   x: number
   y: number
 }
@@ -66,7 +67,7 @@ export default function App() {
     (payload: DragStartPayload, e: React.PointerEvent) => {
       const newDrag: ActiveDrag = {
         item: payload.item,
-        emoji: payload.emoji,
+        Icon: payload.Icon,
         x: e.clientX,
         y: e.clientY,
       }
@@ -158,15 +159,15 @@ export default function App() {
       {/* Drag ghost – follows pointer */}
       {dragging && (
         <div
-          className="fixed pointer-events-none z-50 text-6xl"
+          className="fixed pointer-events-none z-50"
           style={{
-            left: dragging.x - 36,
-            top: dragging.y - 36,
+            left: dragging.x - 44,
+            top: dragging.y - 30,
             transform: 'scale(1.25) rotate(-5deg)',
             filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
           }}
         >
-          {dragging.emoji}
+          <dragging.Icon size={dragging.item.kind === 'loco' ? 72 : 60} />
         </div>
       )}
     </div>

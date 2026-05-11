@@ -1,13 +1,19 @@
+import type { FC } from 'react'
+
 export type WagonType = 'hopper' | 'tank' | 'box' | 'flatcar' | 'passenger'
+
+export interface TrainIcon {
+  size?: number
+}
 
 export interface Locomotive {
   id: string
-  emoji: string
+  icon: FC<TrainIcon>
 }
 
 export interface WagonDef {
   type: WagonType
-  emoji: string
+  icon: FC<TrainIcon>
 }
 
 export interface CargoDef {
