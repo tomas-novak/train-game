@@ -18,7 +18,7 @@ export interface WagonDef {
 
 export interface CargoDef {
   id: string
-  emoji: string
+  icon: FC<TrainIcon>
   wagonType: WagonType
 }
 
