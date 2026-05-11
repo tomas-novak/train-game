@@ -156,14 +156,14 @@ export default function App() {
         </button>
       </div>
 
-      {/* Drag ghost – follows pointer */}
+      {/* Drag ghost – follows pointer, centred on cursor via translate(-50%,-50%) */}
       {dragging && (
         <div
           className="fixed pointer-events-none z-50"
           style={{
-            left: dragging.x - 44,
-            top: dragging.y - 30,
-            transform: 'scale(1.25) rotate(-5deg)',
+            left: dragging.x,
+            top: dragging.y,
+            transform: 'translate(-50%, -50%) scale(1.25) rotate(-5deg)',
             filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
           }}
         >

@@ -21,6 +21,9 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
   ({ trainItems, onRemoveItem, isOver, isBlocked, validation, phase }, ref) => {
     const isWrong = phase === 'wrong'
 
+    // Only highlight wagon type errors on the wagons themselves.
+    // Count errors are shown as a separate indicator so the child
+    // isn't confused into thinking the wagon type is wrong.
     function itemError(item: KeyedTrainItem): boolean {
       if (!isWrong || !validation) return false
       if (item.kind === 'loco') return !validation.locomotiveOk
@@ -28,6 +31,8 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
     }
 
     const hasNoWagons = trainItems.filter((t) => t.kind === 'wagon').length === 0
+    // Show ❌ when count is wrong AND the type is right (or no wagons at all,
+    // where wagonTypeOk is spuriously false because selectedWagonType is null).
     const showCountError =
       isWrong &&
       validation !== null &&

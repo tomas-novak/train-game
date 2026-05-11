@@ -15,12 +15,12 @@ interface Props {
 
 interface PaletteItemProps {
   Icon: FC<TrainIcon>
+  iconSize: number
   dimmed: boolean
-  isLoco: boolean
   onPointerDown: (e: React.PointerEvent) => void
 }
 
-function PaletteItem({ Icon, dimmed, isLoco, onPointerDown }: PaletteItemProps) {
+function PaletteItem({ Icon, iconSize, dimmed, onPointerDown }: PaletteItemProps) {
   return (
     <div
       className={[
@@ -33,7 +33,7 @@ function PaletteItem({ Icon, dimmed, isLoco, onPointerDown }: PaletteItemProps) 
       ].join(' ')}
       onPointerDown={onPointerDown}
     >
-      <Icon size={isLoco ? 72 : 60} />
+      <Icon size={iconSize} />
     </div>
   )
 }
@@ -52,7 +52,7 @@ export function DragPalette({ trainItems, onDragStart }: Props) {
           <PaletteItem
             key={loco.id}
             Icon={loco.icon}
-            isLoco={true}
+            iconSize={72}
             dimmed={hasLoco}
             onPointerDown={(e) => {
               e.preventDefault()
@@ -73,7 +73,7 @@ export function DragPalette({ trainItems, onDragStart }: Props) {
             <PaletteItem
               key={wagon.type}
               Icon={wagon.icon}
-              isLoco={false}
+              iconSize={60}
               dimmed={dimmed}
               onPointerDown={(e) => {
                 e.preventDefault()

@@ -1,8 +1,5 @@
 import type { FC } from 'react'
-
-interface SvgProps {
-  size?: number
-}
+import type { TrainIcon as SvgProps } from '../types'
 
 // ── shared helpers ────────────────────────────────────────────────────────────
 
@@ -414,14 +411,23 @@ export const FlatcarWagon: FC<SvgProps> = ({ size = 68 }) => (
     {/* mid stake */}
     <rect x="42" y="34" width="5" height="12" rx="1.5" fill="#455A64" />
 
-    {/* ── cargo: two colorful containers ── */}
-    <rect x="10" y="22" width="30" height="24" rx="2" fill="#43A047" />
-    <line x1="25" y1="22" x2="25" y2="46" stroke="#388E3C" strokeWidth="1.5" />
-    <rect x="11" y="23" width="28" height="4" rx="1" fill="#388E3C" opacity="0.5" />
-
-    <rect x="50" y="22" width="30" height="24" rx="2" fill="#1E88E5" />
-    <line x1="65" y1="22" x2="65" y2="46" stroke="#1565C0" strokeWidth="1.5" />
-    <rect x="51" y="23" width="28" height="4" rx="1" fill="#1565C0" opacity="0.5" />
+    {/* ── cargo: car silhouette (matches cars cargo type) ── */}
+    {/* car body */}
+    <rect x="8" y="34" width="74" height="12" rx="4" fill="#1E88E5" />
+    {/* cabin */}
+    <path d="M20,34 Q24,24 32,22 L58,22 Q66,24 70,34 Z" fill="#1565C0" />
+    {/* windshield + rear window */}
+    <path d="M23,34 Q26,26 32,24 L45,24 L45,34 Z" fill="#B3E5FC" opacity="0.85" />
+    <path d="M45,24 L58,24 Q64,26 67,34 L45,34 Z" fill="#B3E5FC" opacity="0.7" />
+    <line x1="45" y1="24" x2="45" y2="34" stroke="#1565C0" strokeWidth="1.5" />
+    {/* wheels */}
+    <circle cx="22" cy="48" r="6" fill="#1a1a1a" />
+    <circle cx="22" cy="48" r="2.5" fill="#888" />
+    <circle cx="68" cy="48" r="6" fill="#1a1a1a" />
+    <circle cx="68" cy="48" r="2.5" fill="#888" />
+    {/* headlight + taillight */}
+    <ellipse cx="82" cy="38" rx="2.5" ry="3" fill="#FFF176" />
+    <ellipse cx="8"  cy="38" rx="2.5" ry="3" fill="#EF5350" />
 
     {/* ── buffers ── */}
     <rect x="1" y="44" width="4" height="7" rx="2" fill="#777" />

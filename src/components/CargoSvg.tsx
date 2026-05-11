@@ -1,8 +1,5 @@
 import type { FC } from 'react'
-
-interface SvgProps {
-  size?: number
-}
+import type { TrainIcon as SvgProps } from '../types'
 
 // ── 🪨 Coal ───────────────────────────────────────────────────────────────────
 export const CoalCargo: FC<SvgProps> = ({ size = 52 }) => (
