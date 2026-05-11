@@ -19,8 +19,7 @@ export function TaskDisplay({ task }: Props) {
         <Icon size={56} />
         <button
           onClick={() => setShowHelp(true)}
-          className="w-9 h-9 rounded-full bg-yellow-300 text-gray-800 text-lg font-black flex items-center justify-center shadow active:scale-90 hover:bg-yellow-400 transition-all leading-none"
-          style={{ minWidth: 36 }}
+          className="w-16 h-16 rounded-full bg-yellow-300 text-gray-800 text-lg font-black flex items-center justify-center shadow active:scale-90 hover:bg-yellow-400 transition-all leading-none"
           aria-label="Help"
         >
           ?
@@ -39,7 +38,7 @@ export function TaskDisplay({ task }: Props) {
             {/* Close button */}
             <button
               onClick={() => setShowHelp(false)}
-              className="absolute top-3 right-3 w-9 h-9 rounded-full bg-gray-200 text-gray-700 text-lg font-black flex items-center justify-center hover:bg-gray-300 active:scale-90 transition-all leading-none"
+              className="absolute top-3 right-3 w-16 h-16 rounded-full bg-gray-200 text-gray-700 text-lg font-black flex items-center justify-center hover:bg-gray-300 active:scale-90 transition-all leading-none"
             >
               ✕
             </button>
