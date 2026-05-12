@@ -4,7 +4,7 @@ import { LEVELS, CORRECT_PER_LEVEL } from '../data/levels'
 import { validateTrain } from '../utils/validation'
 import { generateTask } from '../utils/random'
 
-const STORAGE_KEY = 'trainGameProgress'
+const STORAGE_KEY = 'trainGameProgress.sky'
 
 function loadProgress(): GameProgress {
   try {
@@ -39,10 +39,13 @@ export interface GameState {
   trainItems: KeyedTrainItem[]
   validation: ValidationResult | null
   atCap: boolean
+  shakeKey: number
+  pulseTask: boolean
   addToTrain: (item: TrainItem) => void
   removeFromTrain: (key: number) => void
   submit: () => void
   nextRound: () => void
+  resetProgress: () => void
 }
 
 export function useGameState(): GameState {
@@ -53,6 +56,8 @@ export function useGameState(): GameState {
   const [phase, setPhase] = useState<GamePhase>('playing')
   const [trainItems, setTrainItems] = useState<KeyedTrainItem[]>([])
   const [validation, setValidation] = useState<ValidationResult | null>(null)
+  const [shakeKey, setShakeKey] = useState(0)
+  const [pulseTask, setPulseTask] = useState(false)
   const keyCounter = useRef(0)
   const trainChangedRef = useRef(false)
 
@@ -68,7 +73,6 @@ export function useGameState(): GameState {
           const withoutLoco = prev.filter((t) => t.kind !== 'loco')
           return [keyed, ...withoutLoco]
         }
-        // Type switch resets to 1 wagon (always within cap) — check before cap
         const existingType = (
           prev.find((t) => t.kind === 'wagon') as Extract<KeyedTrainItem, { kind: 'wagon' }> | undefined
         )?.type
@@ -77,14 +81,11 @@ export function useGameState(): GameState {
           const loco = prev.find((t) => t.kind === 'loco')
           return loco ? [loco, keyed] : [keyed]
         }
-        // Same type: enforce wagon count cap
         const wagonCount = prev.filter((t) => t.kind === 'wagon').length
         if (wagonCount >= levelDef.maxNumber) return prev
         trainChangedRef.current = true
         return [...prev, keyed]
       })
-      // Only clear error state when train actually changed — a cap-blocked
-      // drop must not erase the validation highlights the child is reading.
       if (trainChangedRef.current) {
         setPhase((p) => (p === 'wrong' ? 'playing' : p))
         setValidation(null)
@@ -117,6 +118,9 @@ export function useGameState(): GameState {
       setPhase('departing')
     } else {
       setPhase('wrong')
+      setShakeKey((k) => k + 1)
+      setPulseTask(true)
+      setTimeout(() => setPulseTask(false), 600)
     }
   }, [task, trainItems])
 
@@ -139,11 +143,21 @@ export function useGameState(): GameState {
     setPhase('playing')
   }, [phase, progress])
 
+  const resetProgress = useCallback(() => {
+    const p = { level: 1, correctInLevel: 0 }
+    saveProgress(p)
+    setProgress(p)
+    setTask(generateTask(LEVELS[0]))
+    setTrainItems([])
+    setValidation(null)
+    setPhase('playing')
+  }, [])
+
   useEffect(() => {
     if (phase === 'departing') {
       const timer = setTimeout(() => {
         setPhase('celebrating')
-      }, 2400)
+      }, 1800)
       return () => clearTimeout(timer)
     }
   }, [phase])
@@ -152,7 +166,7 @@ export function useGameState(): GameState {
     if (phase === 'celebrating') {
       const timer = setTimeout(() => {
         nextRound()
-      }, 2500)
+      }, 2200)
       return () => clearTimeout(timer)
     }
   }, [phase, nextRound])
@@ -167,9 +181,12 @@ export function useGameState(): GameState {
     trainItems,
     validation,
     atCap,
+    shakeKey,
+    pulseTask,
     addToTrain,
     removeFromTrain,
     submit,
     nextRound,
+    resetProgress,
   }
 }

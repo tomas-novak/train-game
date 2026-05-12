@@ -1,5 +1,5 @@
 import type { WagonDef } from '../types'
-import { HopperWagon, TankWagon, BoxWagon, FlatcarWagon, PassengerWagon, LogcarWagon } from '../components/TrainSvg'
+import { HopperWagon, TankWagon, BoxWagon, FlatcarWagon, PassengerWagon, LogcarWagon } from '../components/svgs'
 
 export const WAGONS: WagonDef[] = [
   { type: 'hopper', icon: HopperWagon },

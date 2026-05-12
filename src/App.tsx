@@ -1,19 +1,35 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { useGameState } from './hooks/useGameState'
 import { CORRECT_PER_LEVEL } from './data/levels'
-import { TaskDisplay } from './components/TaskDisplay'
+import { TaskHero } from './components/TaskHero'
+import { HelpModal } from './components/HelpModal'
 import { DragPalette } from './components/DragPalette'
 import { TrackZone } from './components/TrackZone'
-import { CelebrationScreen } from './components/CelebrationScreen'
+import { Celebration } from './components/Celebration'
+import { Scene } from './components/Scene'
+import { SKY } from './theme'
 import type { TrainItem, TrainIcon } from './types'
 import type { DragStartPayload } from './components/DragPalette'
 import type { FC } from 'react'
 
+const t = SKY
+
 interface ActiveDrag {
   item: TrainItem
   Icon: FC<TrainIcon>
+  iconSize: number
   x: number
   y: number
+}
+
+// Darken a hex color by ~22%
+function darken(hex: string): string {
+  if (!hex.startsWith('#') || hex.length !== 7) return hex
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  const d = (x: number) => Math.max(0, Math.floor(x * 0.78)).toString(16).padStart(2, '0')
+  return `#${d(r)}${d(g)}${d(b)}`
 }
 
 export default function App() {
@@ -24,8 +40,10 @@ export default function App() {
 
   const [dragging, setDragging] = useState<ActiveDrag | null>(null)
   const [isOverTrack, setIsOverTrack] = useState(false)
+  const [resetting, setResetting] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
 
-  const { addToTrain, removeFromTrain, submit } = game
+  const { addToTrain, removeFromTrain, submit, resetProgress, shakeKey, pulseTask } = game
 
   const checkOverTrack = useCallback((x: number, y: number): boolean => {
     if (!trackRef.current) return false
@@ -33,7 +51,6 @@ export default function App() {
     return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom
   }, [])
 
-  // Keep ref in sync so event handlers always see latest value
   useEffect(() => {
     draggingRef.current = dragging
   }, [dragging])
@@ -44,17 +61,14 @@ export default function App() {
       setDragging((d) => (d ? { ...d, x: e.clientX, y: e.clientY } : null))
       setIsOverTrack(checkOverTrack(e.clientX, e.clientY))
     }
-
     const handleUp = (e: PointerEvent) => {
       const d = draggingRef.current
       if (!d) return
-      if (checkOverTrack(e.clientX, e.clientY)) {
-        addToTrain(d.item)
-      }
+      if (checkOverTrack(e.clientX, e.clientY)) addToTrain(d.item)
+      draggingRef.current = null
       setDragging(null)
       setIsOverTrack(false)
     }
-
     window.addEventListener('pointermove', handleMove)
     window.addEventListener('pointerup', handleUp)
     return () => {
@@ -63,11 +77,21 @@ export default function App() {
     }
   }, [checkOverTrack, addToTrain])
 
+  // Trigger shake animation when shakeKey increments
+  useEffect(() => {
+    if (shakeKey > 0 && containerRef.current) {
+      containerRef.current.classList.remove('shake')
+      void containerRef.current.offsetWidth
+      containerRef.current.classList.add('shake')
+    }
+  }, [shakeKey])
+
   const handleDragStart = useCallback(
     (payload: DragStartPayload, e: React.PointerEvent) => {
       const newDrag: ActiveDrag = {
         item: payload.item,
         Icon: payload.Icon,
+        iconSize: payload.iconSize,
         x: e.clientX,
         y: e.clientY,
       }
@@ -77,100 +101,154 @@ export default function App() {
     [],
   )
 
-  // Shake animation on wrong answer
-  useEffect(() => {
-    if (game.phase === 'wrong' && containerRef.current) {
-      containerRef.current.classList.remove('shake')
-      void containerRef.current.offsetWidth
-      containerRef.current.classList.add('shake')
-    }
-  }, [game.phase])
-
-  if (game.phase === 'celebrating') {
-    return <CelebrationScreen />
-  }
+  const handleReset = useCallback(() => {
+    resetProgress()
+    setResetting(true)
+    setTimeout(() => setResetting(false), 400)
+  }, [resetProgress])
 
   return (
-    <div
-      ref={containerRef}
-      className="min-h-svh bg-gradient-to-b from-sky-300 via-sky-100 to-emerald-100 flex flex-col select-none"
-    >
-      {/* Top bar: task left, level+progress right */}
-      <div className="flex items-start justify-between p-3 gap-2">
-        <TaskDisplay task={game.task} />
-        <div className="flex flex-col items-end gap-2 pt-1 shrink-0">
-          <div className="text-xl leading-none">{'⭐'.repeat(game.progress.level)}</div>
-          <div className="flex gap-2">
-            {Array.from({ length: CORRECT_PER_LEVEL }).map((_, i) => (
-              <div
-                key={i}
-                className={[
-                  'w-4 h-4 rounded-full transition-all',
-                  i < game.progress.correctInLevel
-                    ? 'bg-green-500 scale-125'
-                    : 'bg-gray-400/60',
-                ].join(' ')}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Palette – center of screen */}
-      <div className="flex-1 flex items-center justify-center px-4 py-6">
-        <DragPalette trainItems={game.trainItems} onDragStart={handleDragStart} />
-      </div>
-
-      {/* Drag hint arrow – visible until first item is placed */}
-      {game.trainItems.length === 0 && (
-        <div className="flex justify-center pb-1 pointer-events-none select-none">
-          <span className="text-4xl animate-bounce" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>
-            ⬇️
-          </span>
-        </div>
-      )}
-
-      {/* Track drop zone – full width */}
-      <TrackZone
-        ref={trackRef}
-        trainItems={game.trainItems}
-        onRemoveItem={removeFromTrain}
-        isOver={isOverTrack}
-        isBlocked={(() => {
-          if (!isOverTrack || !game.atCap || dragging?.item.kind !== 'wagon') return false
-          // Type-switch drags are always allowed even at cap — don't show 🚫
-          const placedType = game.trainItems.find((t) => t.kind === 'wagon')?.type ?? null
-          return placedType === null || dragging.item.type === placedType
-        })()}
-        validation={game.validation}
-        phase={game.phase}
-      />
-
-      {/* Submit button */}
-      <div className="flex justify-center py-4 bg-emerald-100">
-        <button
-          onClick={submit}
-          disabled={game.phase === 'departing'}
-          className="text-4xl font-black rounded-3xl px-10 py-4 bg-orange-400 text-white shadow-xl active:scale-95 hover:bg-orange-500 transition-all min-w-[180px] disabled:opacity-50 disabled:pointer-events-none"
-        >
-          🚂 Jet!
-        </button>
-      </div>
-
-      {/* Drag ghost – follows pointer, centred on cursor via translate(-50%,-50%) */}
-      {dragging && (
+    <div className="min-h-svh flex items-stretch">
+      <Scene>
         <div
-          className="fixed pointer-events-none z-50"
-          style={{
-            left: dragging.x,
-            top: dragging.y,
-            transform: 'translate(-50%, -50%) scale(1.25) rotate(-5deg)',
-            filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
-          }}
+          ref={containerRef}
+          className="relative w-full h-full flex flex-col select-none"
+          style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: t.ink, minHeight: '100svh' }}
         >
-          <dragging.Icon size={dragging.item.kind === 'loco' ? 72 : 60} />
+          {/* top bar */}
+          <div className="flex items-start justify-between px-3 pt-3 gap-2">
+            <TaskHero
+              task={game.task}
+              onHelp={() => setHelpOpen(true)}
+              pulse={pulseTask}
+            />
+            <button onClick={handleReset} className="pt-1" title="Reset progress">
+              <div className="flex flex-col items-end gap-2">
+                {/* stars */}
+                <div className="flex gap-1">
+                  {[1, 2, 3].map((i) => (
+                    <svg key={i} width="22" height="22" viewBox="0 0 24 24">
+                      <polygon
+                        points="12,2 14.8,9 22,9.5 16.5,14 18.2,21 12,17 5.8,21 7.5,14 2,9.5 9.2,9"
+                        fill={i <= game.progress.level ? t.accent2 : t.panelEdge}
+                        stroke={i <= game.progress.level ? t.accent : 'transparent'}
+                        strokeWidth="0.6"
+                      />
+                    </svg>
+                  ))}
+                </div>
+                {/* progress dots */}
+                <div className="flex gap-1.5">
+                  {Array.from({ length: CORRECT_PER_LEVEL }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="rounded-full transition-all"
+                      style={{
+                        width: i < game.progress.correctInLevel ? 16 : 12,
+                        height: i < game.progress.correctInLevel ? 16 : 12,
+                        background: i < game.progress.correctInLevel ? t.good : t.panelEdge,
+                        boxShadow: i < game.progress.correctInLevel
+                          ? `inset 0 -2px 0 rgba(0,0,0,0.15), 0 2px 4px ${t.softShadow}`
+                          : 'none',
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {/* palette */}
+          <div className="flex-1 flex items-center justify-center px-3">
+            <DragPalette trainItems={game.trainItems} onDragStart={handleDragStart} />
+          </div>
+
+          {/* drag hint */}
+          {game.trainItems.length === 0 && (
+            <div className="flex justify-center pb-1 pointer-events-none select-none">
+              <svg width="38" height="44" viewBox="0 0 38 44" className="animate-bounce">
+                <path
+                  d="M19,4 L19,30 M19,30 L7,18 M19,30 L31,18"
+                  stroke={t.ink}
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  opacity={0.55}
+                />
+              </svg>
+            </div>
+          )}
+
+          {/* track */}
+          <TrackZone
+            ref={trackRef}
+            trainItems={game.trainItems}
+            onRemoveItem={removeFromTrain}
+            isOver={isOverTrack}
+            isBlocked={(() => {
+              if (!isOverTrack || dragging?.item.kind !== 'wagon') return false
+              if (!game.atCap) return false
+              const placedType = game.trainItems.find((p) => p.kind === 'wagon')?.type ?? null
+              return placedType === null || dragging.item.type === placedType
+            })()}
+            validation={game.validation}
+            phase={game.phase}
+          />
+
+          {/* submit */}
+          <div className="flex justify-center py-4" style={{ background: t.skyBot }}>
+            <button
+              onClick={submit}
+              disabled={game.phase === 'departing'}
+              className="rounded-full transition-all active:scale-95 hover:-translate-y-0.5 disabled:opacity-40 disabled:pointer-events-none flex items-center gap-3 px-8 py-4"
+              style={{
+                background: `linear-gradient(180deg, ${t.good}, ${darken(t.good)})`,
+                color: '#fff',
+                fontWeight: 900,
+                fontSize: 28,
+                lineHeight: 1,
+                boxShadow: `0 10px 22px ${t.shadow}, inset 0 -4px 0 rgba(0,0,0,0.18), inset 0 2px 0 rgba(255,255,255,0.4)`,
+                minHeight: 64,
+              }}
+            >
+              <svg width="34" height="34" viewBox="0 0 24 24">
+                <polygon points="6,4 20,12 6,20" fill="#fff" />
+              </svg>
+              <span>Jet!</span>
+            </button>
+          </div>
+
+          {/* drag ghost */}
+          {dragging && (
+            <div
+              className="fixed pointer-events-none z-50"
+              style={{
+                left: dragging.x,
+                top: dragging.y,
+                transform: 'translate(-50%, -50%) scale(1.18) rotate(-5deg)',
+                filter: `drop-shadow(0 12px 16px ${t.shadow})`,
+              }}
+            >
+              <dragging.Icon size={dragging.iconSize} />
+            </div>
+          )}
+
+          {/* help modal */}
+          <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} task={game.task} />
+
+          {/* celebration overlay */}
+          {game.phase === 'celebrating' && <Celebration />}
+
+          {/* reset flash */}
+          {resetting && (
+            <div
+              className="absolute inset-0 z-50 pointer-events-none"
+              style={{ background: '#fff', animation: 'flash 400ms ease-out' }}
+            />
+          )}
         </div>
-      )}
+      </Scene>
     </div>
   )
 }

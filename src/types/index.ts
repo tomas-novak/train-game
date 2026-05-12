@@ -1,9 +1,13 @@
 import type { FC } from 'react'
+import type { SkyTheme } from '../theme'
+
+export type { SkyTheme }
 
 export type WagonType = 'hopper' | 'tank' | 'box' | 'flatcar' | 'passenger' | 'logcar'
 
 export interface TrainIcon {
   size?: number
+  t?: SkyTheme
 }
 
 export interface Locomotive {
