@@ -28,7 +28,7 @@ const GroundShadow: FC<{ y?: number; w?: number; opacity?: number }> = ({
 
 export const SteamLoco: FC<TrainIcon> = ({ size = 100, t }) => {
   const raw = useId()
-  const id = raw.replace(/:/g, '')
+  const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? SKY).steam as SkyTheme['steam']
   return (
     <svg viewBox="0 0 140 76" width={size} height={(size * 76) / 140} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -76,7 +76,7 @@ export const SteamLoco: FC<TrainIcon> = ({ size = 100, t }) => {
 
 export const ElectricLoco: FC<TrainIcon> = ({ size = 100, t }) => {
   const raw = useId()
-  const id = raw.replace(/:/g, '')
+  const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? SKY).electric as SkyTheme['electric']
   return (
     <svg viewBox="0 0 140 76" width={size} height={(size * 76) / 140} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -120,7 +120,7 @@ export const ElectricLoco: FC<TrainIcon> = ({ size = 100, t }) => {
 
 export const DieselLoco: FC<TrainIcon> = ({ size = 100, t }) => {
   const raw = useId()
-  const id = raw.replace(/:/g, '')
+  const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? SKY).diesel as SkyTheme['diesel']
   return (
     <svg viewBox="0 0 140 76" width={size} height={(size * 76) / 140} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -166,7 +166,7 @@ export const DieselLoco: FC<TrainIcon> = ({ size = 100, t }) => {
 
 export const HopperWagon: FC<TrainIcon> = ({ size = 80, t }) => {
   const raw = useId()
-  const id = raw.replace(/:/g, '')
+  const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? SKY).hopper as SkyTheme['hopper']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -200,7 +200,7 @@ export const HopperWagon: FC<TrainIcon> = ({ size = 80, t }) => {
 
 export const TankWagon: FC<TrainIcon> = ({ size = 80, t }) => {
   const raw = useId()
-  const id = raw.replace(/:/g, '')
+  const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? SKY).tank as SkyTheme['tank']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -279,7 +279,7 @@ export const TankWagon: FC<TrainIcon> = ({ size = 80, t }) => {
 
 export const BoxWagon: FC<TrainIcon> = ({ size = 80, t }) => {
   const raw = useId()
-  const id = raw.replace(/:/g, '')
+  const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? SKY).box as SkyTheme['box']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -316,7 +316,7 @@ export const BoxWagon: FC<TrainIcon> = ({ size = 80, t }) => {
 
 export const FlatcarWagon: FC<TrainIcon> = ({ size = 80, t }) => {
   const raw = useId()
-  const id = raw.replace(/:/g, '')
+  const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? SKY).flatcar as SkyTheme['flatcar']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -347,7 +347,7 @@ export const FlatcarWagon: FC<TrainIcon> = ({ size = 80, t }) => {
 
 export const PassengerWagon: FC<TrainIcon> = ({ size = 80, t }) => {
   const raw = useId()
-  const id = raw.replace(/:/g, '')
+  const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? SKY).passenger as SkyTheme['passenger']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -387,7 +387,7 @@ export const PassengerWagon: FC<TrainIcon> = ({ size = 80, t }) => {
 
 export const LogcarWagon: FC<TrainIcon> = ({ size = 80, t }) => {
   const raw = useId()
-  const id = raw.replace(/:/g, '')
+  const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? SKY).logcar as SkyTheme['logcar']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -449,7 +449,7 @@ export const SandCargo: FC<TrainIcon> = ({ size = 56, t }) => {
 
 export const MilkCargo: FC<TrainIcon> = ({ size = 56, t }) => {
   const raw = useId()
-  const id = raw.replace(/:/g, '')
+  const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? SKY).milk as SkyTheme['milk']
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -473,7 +473,7 @@ export const MilkCargo: FC<TrainIcon> = ({ size = 56, t }) => {
 
 export const FuelCargo: FC<TrainIcon> = ({ size = 56, t }) => {
   const raw = useId()
-  const id = raw.replace(/:/g, '')
+  const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? SKY).fuel as SkyTheme['fuel']
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -539,7 +539,7 @@ export const ParcelsCargo: FC<TrainIcon> = ({ size = 56, t }) => {
 
 export const CarsCargo: FC<TrainIcon> = ({ size = 56, t }) => {
   const raw = useId()
-  const id = raw.replace(/:/g, '')
+  const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? SKY).cars as SkyTheme['cars']
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">

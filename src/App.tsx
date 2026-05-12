@@ -8,11 +8,13 @@ import { TrackZone } from './components/TrackZone'
 import { Celebration } from './components/Celebration'
 import { Scene } from './components/Scene'
 import { SKY } from './theme'
+import { darken } from './utils/color'
 import type { TrainItem, TrainIcon } from './types'
 import type { DragStartPayload } from './components/DragPalette'
 import type { FC } from 'react'
 
 const t = SKY
+const RESET_FLASH_MS = 400
 
 interface ActiveDrag {
   item: TrainItem
@@ -22,15 +24,6 @@ interface ActiveDrag {
   y: number
 }
 
-// Darken a hex color by ~22%
-function darken(hex: string): string {
-  if (!hex.startsWith('#') || hex.length !== 7) return hex
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  const d = (x: number) => Math.max(0, Math.floor(x * 0.78)).toString(16).padStart(2, '0')
-  return `#${d(r)}${d(g)}${d(b)}`
-}
 
 export default function App() {
   const game = useGameState()
@@ -104,7 +97,7 @@ export default function App() {
   const handleReset = useCallback(() => {
     resetProgress()
     setResetting(true)
-    setTimeout(() => setResetting(false), 400)
+    setTimeout(() => setResetting(false), RESET_FLASH_MS)
   }, [resetProgress])
 
   return (
@@ -189,8 +182,8 @@ export default function App() {
             isBlocked={(() => {
               if (!isOverTrack || dragging?.item.kind !== 'wagon') return false
               if (!game.atCap) return false
-              const placedType = game.trainItems.find((p) => p.kind === 'wagon')?.type ?? null
-              return placedType === null || dragging.item.type === placedType
+              const placedWagonType = game.trainItems.find((p) => p.kind === 'wagon')?.type ?? null
+              return placedWagonType === null || dragging.item.type === placedWagonType
             })()}
             validation={game.validation}
             phase={game.phase}

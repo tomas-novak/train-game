@@ -1,4 +1,4 @@
-import { useEffect, type FC } from 'react'
+import { useEffect, useRef, type FC } from 'react'
 import type { Task } from '../types'
 import { WAGONS } from '../data/wagons'
 import { CARGO } from '../data/cargo'
@@ -18,11 +18,40 @@ interface Props {
 }
 
 export const HelpModal: FC<Props> = ({ open, onClose, task }) => {
+  const panelRef = useRef<HTMLDivElement>(null)
+  const previousFocusRef = useRef<Element | null>(null)
+
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    previousFocusRef.current = document.activeElement
+    // Focus the panel so screen readers announce the dialog
+    panelRef.current?.focus()
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onClose(); return }
+      // Trap Tab inside the modal
+      if (e.key !== 'Tab' || !panelRef.current) return
+      const focusable = Array.from(
+        panelRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+      )
+      if (focusable.length === 0) { e.preventDefault(); return }
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus() }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus() }
+      }
+    }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      if (previousFocusRef.current instanceof HTMLElement) {
+        previousFocusRef.current.focus()
+      }
+    }
   }, [open, onClose])
 
   if (!open) return null
@@ -34,7 +63,11 @@ export const HelpModal: FC<Props> = ({ open, onClose, task }) => {
       onClick={onClose}
     >
       <div
-        className="rounded-3xl p-4 flex flex-col gap-2 mx-3 relative overflow-y-auto"
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
+        className="rounded-3xl p-4 flex flex-col gap-2 mx-3 relative overflow-y-auto outline-none"
         style={{
           background: t.panel,
           boxShadow: '0 20px 50px rgba(0,0,0,0.35)',

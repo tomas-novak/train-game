@@ -6,6 +6,10 @@ import { generateTask } from '../utils/random'
 
 const STORAGE_KEY = 'trainGameProgress.sky'
 
+const DEPART_MS = 1800
+const CELEBRATE_MS = 2200
+const PULSE_MS = 600
+
 function loadProgress(): GameProgress {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -120,7 +124,7 @@ export function useGameState(): GameState {
       setPhase('wrong')
       setShakeKey((k) => k + 1)
       setPulseTask(true)
-      setTimeout(() => setPulseTask(false), 600)
+      setTimeout(() => setPulseTask(false), PULSE_MS)
     }
   }, [task, trainItems])
 
@@ -157,7 +161,7 @@ export function useGameState(): GameState {
     if (phase === 'departing') {
       const timer = setTimeout(() => {
         setPhase('celebrating')
-      }, 1800)
+      }, DEPART_MS)
       return () => clearTimeout(timer)
     }
   }, [phase])
@@ -166,7 +170,7 @@ export function useGameState(): GameState {
     if (phase === 'celebrating') {
       const timer = setTimeout(() => {
         nextRound()
-      }, 2200)
+      }, CELEBRATE_MS)
       return () => clearTimeout(timer)
     }
   }, [phase, nextRound])
