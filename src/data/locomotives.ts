@@ -1,5 +1,5 @@
 import type { Locomotive } from '../types'
-import { SteamLoco, ElectricLoco, DieselLoco } from '../components/TrainSvg'
+import { SteamLoco, ElectricLoco, DieselLoco } from '../components/svgs'
 
 export const LOCOMOTIVES: Locomotive[] = [
   { id: 'steam', icon: SteamLoco },

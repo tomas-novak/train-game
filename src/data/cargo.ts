@@ -2,7 +2,7 @@ import type { CargoDef } from '../types'
 import {
   CoalCargo, SandCargo, MilkCargo, FuelCargo,
   ApplesCargo, ParcelsCargo, CarsCargo, PeopleCargo, LogsCargo,
-} from '../components/CargoSvg'
+} from '../components/svgs'
 
 export const CARGO: CargoDef[] = [
   { id: 'coal',    icon: CoalCargo,    wagonType: 'hopper'    },
