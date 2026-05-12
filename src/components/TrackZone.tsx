@@ -1,4 +1,4 @@
-import { forwardRef, type FC } from 'react'
+import { forwardRef, useId, type FC } from 'react'
 import type { KeyedTrainItem, ValidationResult } from '../types'
 import { LOCOMOTIVES } from '../data/locomotives'
 import { WAGONS } from '../data/wagons'
@@ -59,6 +59,8 @@ interface Props {
 
 export const TrackZone = forwardRef<HTMLDivElement, Props>(
   ({ trainItems, onRemoveItem, isOver, isBlocked, validation, phase }, ref) => {
+    const rawId = useId()
+    const patternId = `sleeper-${rawId.replace(/[^a-zA-Z0-9_-]/g, '')}`
     const isWrong = phase === 'wrong'
     const isDeparting = phase === 'departing'
 
@@ -94,20 +96,15 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
               : 'inset 0 1px 0 rgba(0,0,0,0.08), inset 0 -1px 0 rgba(0,0,0,0.08)',
         }}
       >
-        {/* sleepers */}
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          preserveAspectRatio="none"
-          viewBox="0 0 400 140"
-        >
-          {Array.from({ length: 12 }).map((_, i) => (
-            <rect
-              key={i}
-              x={i * 36} y={56} width={28} height={28} rx={3}
-              fill={i % 2 === 0 ? t.tie : t.tieDark}
-              opacity={activeOver ? 0.4 : 0.9}
-            />
-          ))}
+        {/* sleepers — pattern tiles at fixed 36 px so spacing looks right on all screen widths */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none">
+          <defs>
+            <pattern id={patternId} x="4" y="0" width="72" height="140" patternUnits="userSpaceOnUse">
+              <rect x="0"  y="56" width="28" height="28" rx={3} fill={t.tie}     opacity={activeOver ? 0.4 : 0.9} />
+              <rect x="36" y="56" width="28" height="28" rx={3} fill={t.tieDark} opacity={activeOver ? 0.4 : 0.9} />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill={`url(#${patternId})`} />
         </svg>
 
         {/* rails */}
