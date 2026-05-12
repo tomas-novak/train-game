@@ -68,6 +68,10 @@ export function useGameState(): GameState {
   const trainChangedRef = useRef(false)
   const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  useEffect(() => {
+    return () => { if (pulseTimerRef.current !== null) clearTimeout(pulseTimerRef.current) }
+  }, [])
+
   const levelDef = LEVELS[Math.min(progress.level - 1, LEVELS.length - 1)]
 
   const addToTrain = useCallback(

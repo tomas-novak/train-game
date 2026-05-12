@@ -11,6 +11,7 @@ const LOCO_ICON = Object.fromEntries(LOCOMOTIVES.map((l) => [l.id, l.icon]))
 const WAGON_ICON = Object.fromEntries(WAGONS.map((w) => [w.type, w.icon]))
 
 const Signal: FC<{ isGo: boolean }> = ({ isGo }) => (
+  // height = track zone (140) + protrusion above via top:-2 = 142; lamp box = height:76 + marginTop:6
   <div className="absolute pointer-events-none flex flex-col" style={{ left: 14, top: -2, height: 142 }}>
     <div
       className="rounded-xl flex flex-col items-center justify-center"

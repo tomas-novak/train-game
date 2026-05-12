@@ -58,9 +58,11 @@ export const HelpModal: FC<Props> = ({ open, onClose, task }) => {
 
   return (
     <div
+      role="presentation"
       className="absolute inset-0 z-50 flex items-center justify-center"
       style={{ background: 'rgba(20,20,30,0.55)' }}
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}
     >
       <div
         ref={panelRef}

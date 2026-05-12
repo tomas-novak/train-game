@@ -32,6 +32,10 @@ export default function App() {
   const draggingRef = useRef<ActiveDrag | null>(null)
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  useEffect(() => {
+    return () => { if (resetTimerRef.current !== null) clearTimeout(resetTimerRef.current) }
+  }, [])
+
   const [dragging, setDragging] = useState<ActiveDrag | null>(null)
   const [isOverTrack, setIsOverTrack] = useState(false)
   const [resetting, setResetting] = useState(false)
@@ -185,7 +189,7 @@ export default function App() {
               if (!isOverTrack || dragging?.item.kind !== 'wagon') return false
               if (!game.atCap) return false
               const placedWagonType = game.trainItems.find((p) => p.kind === 'wagon')?.type ?? null
-              return placedWagonType === null || dragging.item.type === placedWagonType
+              return dragging.item.type === placedWagonType
             })()}
             validation={game.validation}
             phase={game.phase}
