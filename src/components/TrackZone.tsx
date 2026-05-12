@@ -94,20 +94,15 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
               : 'inset 0 1px 0 rgba(0,0,0,0.08), inset 0 -1px 0 rgba(0,0,0,0.08)',
         }}
       >
-        {/* sleepers */}
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          preserveAspectRatio="none"
-          viewBox="0 0 400 140"
-        >
-          {Array.from({ length: 12 }).map((_, i) => (
-            <rect
-              key={i}
-              x={i * 36} y={56} width={28} height={28} rx={3}
-              fill={i % 2 === 0 ? t.tie : t.tieDark}
-              opacity={activeOver ? 0.4 : 0.9}
-            />
-          ))}
+        {/* sleepers – pattern tiles at fixed 36px pitch regardless of container width */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none">
+          <defs>
+            <pattern id="track-sleepers" x="0" y="0" width="72" height="140" patternUnits="userSpaceOnUse">
+              <rect x="4" y="56" width="28" height="28" rx="3" fill={t.tie} />
+              <rect x="40" y="56" width="28" height="28" rx="3" fill={t.tieDark} />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#track-sleepers)" opacity={activeOver ? 0.4 : 0.9} />
         </svg>
 
         {/* rails */}

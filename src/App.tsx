@@ -107,7 +107,8 @@ export default function App() {
   }, [resetProgress])
 
   return (
-    <div className="min-h-svh flex items-stretch">
+    <div className="min-h-svh flex justify-center" style={{ background: t.skyBot }}>
+      <div className="w-full max-w-2xl flex flex-col min-h-svh">
       <Scene>
         <div
           ref={containerRef}
@@ -248,6 +249,7 @@ export default function App() {
           )}
         </div>
       </Scene>
+      </div>
     </div>
   )
 }
