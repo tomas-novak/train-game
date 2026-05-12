@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { useGameState } from './hooks/useGameState'
+import { useTablet } from './hooks/useTablet'
 import { CORRECT_PER_LEVEL } from './data/levels'
 import { TaskHero } from './components/TaskHero'
 import { HelpModal } from './components/HelpModal'
@@ -27,6 +28,8 @@ interface ActiveDrag {
 
 export default function App() {
   const game = useGameState()
+  const isTablet = useTablet()
+  const trackHeight = isTablet ? 200 : 140
   const trackRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const draggingRef = useRef<ActiveDrag | null>(null)
@@ -106,10 +109,17 @@ export default function App() {
     resetTimerRef.current = setTimeout(() => setResetting(false), RESET_FLASH_MS)
   }, [resetProgress])
 
+  const starSize = isTablet ? 30 : 22
+  const dotFilled = isTablet ? 22 : 16
+  const dotEmpty  = isTablet ? 17 : 12
+  const submitFont = isTablet ? 38 : 28
+  const submitMinH = isTablet ? 88 : 64
+  const submitIcon = isTablet ? 46 : 34
+
   return (
     <div className="min-h-svh flex justify-center" style={{ background: t.skyBot }}>
-      <div className="w-full max-w-2xl flex flex-col min-h-svh">
-      <Scene>
+      <div className="w-full flex flex-col min-h-svh">
+      <Scene trackHeight={trackHeight}>
         <div
           ref={containerRef}
           className="relative w-full h-full flex flex-col select-none"
@@ -121,13 +131,14 @@ export default function App() {
               task={game.task}
               onHelp={() => setHelpOpen(true)}
               pulse={pulseTask}
+              isTablet={isTablet}
             />
             <button onClick={handleReset} className="pt-1" title="Reset progress" aria-label="Reset progress">
               <div className="flex flex-col items-end gap-2">
                 {/* stars */}
                 <div className="flex gap-1">
                   {[1, 2, 3].map((i) => (
-                    <svg key={i} width="22" height="22" viewBox="0 0 24 24">
+                    <svg key={i} width={starSize} height={starSize} viewBox="0 0 24 24">
                       <polygon
                         points="12,2 14.8,9 22,9.5 16.5,14 18.2,21 12,17 5.8,21 7.5,14 2,9.5 9.2,9"
                         fill={i <= game.progress.level ? t.accent2 : t.panelEdge}
@@ -144,8 +155,8 @@ export default function App() {
                       key={i}
                       className="rounded-full transition-all"
                       style={{
-                        width: i < game.progress.correctInLevel ? 16 : 12,
-                        height: i < game.progress.correctInLevel ? 16 : 12,
+                        width: i < game.progress.correctInLevel ? dotFilled : dotEmpty,
+                        height: i < game.progress.correctInLevel ? dotFilled : dotEmpty,
                         background: i < game.progress.correctInLevel ? t.good : t.panelEdge,
                         boxShadow: i < game.progress.correctInLevel
                           ? `inset 0 -2px 0 rgba(0,0,0,0.15), 0 2px 4px ${t.softShadow}`
@@ -160,7 +171,7 @@ export default function App() {
 
           {/* palette */}
           <div className="flex-1 flex items-center justify-center px-3">
-            <DragPalette trainItems={game.trainItems} onDragStart={handleDragStart} />
+            <DragPalette trainItems={game.trainItems} onDragStart={handleDragStart} isTablet={isTablet} />
           </div>
 
           {/* drag hint */}
@@ -194,6 +205,7 @@ export default function App() {
             })()}
             validation={game.validation}
             phase={game.phase}
+            trackHeight={trackHeight}
           />
 
           {/* submit */}
@@ -206,13 +218,13 @@ export default function App() {
                 background: `linear-gradient(180deg, ${t.good}, ${darken(t.good)})`,
                 color: '#fff',
                 fontWeight: 900,
-                fontSize: 28,
+                fontSize: submitFont,
                 lineHeight: 1,
                 boxShadow: `0 10px 22px ${t.shadow}, inset 0 -4px 0 rgba(0,0,0,0.18), inset 0 2px 0 rgba(255,255,255,0.4)`,
-                minHeight: 64,
+                minHeight: submitMinH,
               }}
             >
-              <svg width="34" height="34" viewBox="0 0 24 24">
+              <svg width={submitIcon} height={submitIcon} viewBox="0 0 24 24">
                 <polygon points="6,4 20,12 6,20" fill="#fff" />
               </svg>
               <span>Jet!</span>

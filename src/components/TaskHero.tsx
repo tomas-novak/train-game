@@ -8,10 +8,18 @@ interface Props {
   task: Task
   onHelp: (() => void) | null
   pulse: boolean
+  isTablet?: boolean
 }
 
-export const TaskHero: FC<Props> = ({ task, onHelp, pulse }) => {
+export const TaskHero: FC<Props> = ({ task, onHelp, pulse, isTablet = false }) => {
   const CargoIcon = task.cargo.icon
+
+  const badgeSize  = isTablet ? 90 : 64
+  const badgeFont  = isTablet ? 62 : 44
+  const iconSize   = isTablet ? 78 : 56
+  const helpSize   = isTablet ? 78 : 56
+  const helpFont   = isTablet ? 36 : 26
+
   return (
     <div className="flex items-center gap-3">
       <div
@@ -22,30 +30,31 @@ export const TaskHero: FC<Props> = ({ task, onHelp, pulse }) => {
         }}
       >
         <div
-          className="rounded-2xl w-16 h-16 flex items-center justify-center"
+          className="rounded-2xl flex items-center justify-center"
           style={{
+            width: badgeSize, height: badgeSize,
             background: `linear-gradient(180deg, ${t.accent2}, ${t.accent})`,
             boxShadow: `inset 0 -3px 0 rgba(0,0,0,0.12), inset 0 2px 0 rgba(255,255,255,0.4)`,
             color: '#fff',
             fontFamily: 'system-ui, -apple-system, sans-serif',
             fontWeight: 900,
-            fontSize: 44,
+            fontSize: badgeFont,
             lineHeight: 1,
           }}
         >
           {task.count}
         </div>
-        <CargoIcon size={56} />
+        <CargoIcon size={iconSize} />
       </div>
       {onHelp && (
         <button
           onClick={onHelp}
           className="rounded-full transition-transform active:scale-90 hover:scale-105 flex items-center justify-center"
           style={{
-            width: 56, height: 56,
+            width: helpSize, height: helpSize,
             background: t.panel,
             color: t.inkSoft,
-            fontWeight: 800, fontSize: 26, lineHeight: 1,
+            fontWeight: 800, fontSize: helpFont, lineHeight: 1,
             boxShadow: `0 6px 14px ${t.softShadow}, inset 0 -2px 0 ${t.panelEdge}`,
           }}
           aria-label="Help"
