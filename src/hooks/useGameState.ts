@@ -143,7 +143,7 @@ export function useGameState(): GameState {
     if (phase === 'departing') {
       const timer = setTimeout(() => {
         setPhase('celebrating')
-      }, 2500)
+      }, 2400)
       return () => clearTimeout(timer)
     }
   }, [phase])

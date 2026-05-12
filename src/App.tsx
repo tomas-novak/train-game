@@ -149,8 +149,9 @@ export default function App() {
       {/* Submit button */}
       <div className="flex justify-center py-4 bg-emerald-100">
         <button
-          onClick={submit}
-          className="text-4xl font-black rounded-3xl px-10 py-4 bg-orange-400 text-white shadow-xl active:scale-95 hover:bg-orange-500 transition-all min-w-[180px]"
+          onClick={game.phase === 'playing' ? submit : undefined}
+          disabled={game.phase !== 'playing'}
+          className="text-4xl font-black rounded-3xl px-10 py-4 bg-orange-400 text-white shadow-xl active:scale-95 hover:bg-orange-500 transition-all min-w-[180px] disabled:opacity-50 disabled:pointer-events-none"
         >
           🚂 Jet!
         </button>

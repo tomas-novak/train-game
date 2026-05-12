@@ -83,6 +83,7 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
             }}
           >
             <div
+              className={isDeparting ? undefined : 'animate-pulse'}
               style={{
                 width: 18,
                 height: 18,
@@ -109,7 +110,7 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
 
         {/* Scrollable train row */}
         <div
-          className={['absolute inset-0 flex items-center gap-1 overflow-x-hidden overflow-y-hidden', isDeparting ? 'train-depart' : ''].join(' ')}
+          className={['absolute inset-0 flex items-center gap-1 overflow-y-hidden', isDeparting ? 'overflow-x-hidden train-depart' : 'overflow-x-auto'].join(' ')}
           style={{ paddingLeft: 'calc(10% + 36px)', paddingRight: '16px' }}
         >
           {trainItems.length === 0 ? (
