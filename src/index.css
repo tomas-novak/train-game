@@ -44,7 +44,7 @@
 
 @keyframes train-depart {
   0% { transform: translateX(0); opacity: 1; }
-  100% { transform: translateX(130vw); opacity: 1; }
+  100% { transform: translateX(-130vw); opacity: 1; }
 }
 
 .train-depart {
