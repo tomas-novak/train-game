@@ -1,9 +1,11 @@
-import type { FC } from 'react'
+import { useId, type FC } from 'react'
 import { SKY } from '../theme'
 
 const t = SKY
 
 export const Celebration: FC = () => {
+  const raw = useId()
+  const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const starCount = 16
   return (
     <div
@@ -44,7 +46,7 @@ export const Celebration: FC = () => {
       >
         <svg width="200" height="200" viewBox="0 0 24 24">
           <defs>
-            <radialGradient id="hg-cel" cx="0.4" cy="0.35" r="0.7">
+            <radialGradient id={`hg${id}`} cx="0.4" cy="0.35" r="0.7">
               <stop offset="0" stopColor="#fff7d6" />
               <stop offset="0.6" stopColor={t.accent2} />
               <stop offset="1" stopColor={t.accent} />
@@ -52,7 +54,7 @@ export const Celebration: FC = () => {
           </defs>
           <polygon
             points="12,2 14.8,9 22,9.5 16.5,14 18.2,21 12,17 5.8,21 7.5,14 2,9.5 9.2,9"
-            fill="url(#hg-cel)"
+            fill={`url(#hg${id})`}
             stroke={t.accent}
             strokeWidth="0.4"
             strokeLinejoin="round"

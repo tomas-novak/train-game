@@ -63,9 +63,6 @@ export const SKY = {
     body: ['#b9a8d8', '#8e79b5'] as [string, string],
     bodyHi: '#d2c4e6',
     stripe: '#fff3c6',
-    stripeDark: '#d4b96b',
-    coal: '#2b3856',
-    coalHi: '#4a5577',
     wheel: '#2b3856',
   },
   tank: {
@@ -89,9 +86,6 @@ export const SKY = {
     deck: ['#8a92ab', '#5e677e'] as [string, string],
     deckHi: '#aab2c6',
     stake: '#2b3856',
-    cargoBody: '#f5a3a8',
-    cargoBodyHi: '#fbc1c5',
-    cargoWindow: '#fff0f1',
     wheel: '#2b3856',
   },
   passenger: {
@@ -107,10 +101,7 @@ export const SKY = {
   logcar: {
     deck: ['#b8a08a', '#8a6f5a'] as [string, string],
     stake: '#2b3856',
-    log1: '#b89878',
-    log2: '#d1b395',
     log3: '#e8d0b3',
-    logRing: '#8a6f5a',
     wheel: '#2b3856',
   },
   coal: { a: '#2b3856', b: '#4a5577', c: '#6b7693', hi: '#9aa3bd' },
@@ -121,7 +112,7 @@ export const SKY = {
   parcels: { top: '#c89878', front: '#a87a5a', side: '#7d5d44', twine: '#f5a3a8', label: '#ffffff' },
   cars: { body: '#7aa6e0', bodyDark: '#4d7ab8', window: '#e8f1fb', wheel: '#2b3856', head: '#fff3c6' },
   people: { skinA: '#f5d589', skinB: '#d8967c', shirtA: '#f5a3a8', shirtB: '#7aa6e0', hair: '#5b3024' },
-  logs: { outer: '#8a6f5a', mid: '#b89878', inner: '#d1b395', core: '#e8d0b3', crack: '#5b3024' },
+  logs: { outer: '#8a6f5a', mid: '#b89878', inner: '#d1b395', crack: '#5b3024' },
 } as const
 
 export type SkyTheme = typeof SKY

@@ -46,7 +46,7 @@ interface Props {
 
 export function DragPalette({ trainItems, onDragStart }: Props) {
   const hasLoco = trainItems.some((item) => item.kind === 'loco')
-  const placedType = (
+  const placedWagonType = (
     trainItems.find((item) => item.kind === 'wagon') as Extract<KeyedTrainItem, { kind: 'wagon' }> | undefined
   )?.type
 
@@ -78,7 +78,7 @@ export function DragPalette({ trainItems, onDragStart }: Props) {
       {/* Wagons row */}
       <div className="flex gap-2 justify-center flex-wrap">
         {WAGONS.map((wagon) => {
-          const dimmed = placedType !== undefined && placedType !== wagon.type
+          const dimmed = placedWagonType !== undefined && placedWagonType !== wagon.type
           return (
             <PaletteCard
               key={wagon.type}

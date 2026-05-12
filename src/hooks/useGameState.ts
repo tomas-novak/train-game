@@ -5,6 +5,8 @@ import { validateTrain } from '../utils/validation'
 import { generateTask } from '../utils/random'
 
 const STORAGE_KEY = 'trainGameProgress.sky'
+// Key intentionally versioned with ".sky" to reset progress when the Sky theme
+// redesign shipped — avoids loading stale progress from the old schema.
 
 const DEPART_MS = 1800
 const CELEBRATE_MS = 2200
@@ -64,6 +66,7 @@ export function useGameState(): GameState {
   const [pulseTask, setPulseTask] = useState(false)
   const keyCounter = useRef(0)
   const trainChangedRef = useRef(false)
+  const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const levelDef = LEVELS[Math.min(progress.level - 1, LEVELS.length - 1)]
 
@@ -123,8 +126,9 @@ export function useGameState(): GameState {
     } else {
       setPhase('wrong')
       setShakeKey((k) => k + 1)
+      if (pulseTimerRef.current !== null) clearTimeout(pulseTimerRef.current)
       setPulseTask(true)
-      setTimeout(() => setPulseTask(false), PULSE_MS)
+      pulseTimerRef.current = setTimeout(() => setPulseTask(false), PULSE_MS)
     }
   }, [task, trainItems])
 

@@ -30,6 +30,7 @@ export default function App() {
   const trackRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const draggingRef = useRef<ActiveDrag | null>(null)
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [dragging, setDragging] = useState<ActiveDrag | null>(null)
   const [isOverTrack, setIsOverTrack] = useState(false)
@@ -96,8 +97,9 @@ export default function App() {
 
   const handleReset = useCallback(() => {
     resetProgress()
+    if (resetTimerRef.current !== null) clearTimeout(resetTimerRef.current)
     setResetting(true)
-    setTimeout(() => setResetting(false), RESET_FLASH_MS)
+    resetTimerRef.current = setTimeout(() => setResetting(false), RESET_FLASH_MS)
   }, [resetProgress])
 
   return (
@@ -115,7 +117,7 @@ export default function App() {
               onHelp={() => setHelpOpen(true)}
               pulse={pulseTask}
             />
-            <button onClick={handleReset} className="pt-1" title="Reset progress">
+            <button onClick={handleReset} className="pt-1" title="Reset progress" aria-label="Reset progress">
               <div className="flex flex-col items-end gap-2">
                 {/* stars */}
                 <div className="flex gap-1">

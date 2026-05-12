@@ -66,6 +66,7 @@ export const HelpModal: FC<Props> = ({ open, onClose, task }) => {
         ref={panelRef}
         role="dialog"
         aria-modal="true"
+        aria-label="Help"
         tabIndex={-1}
         className="rounded-3xl p-4 flex flex-col gap-2 mx-3 relative overflow-y-auto outline-none"
         style={{
