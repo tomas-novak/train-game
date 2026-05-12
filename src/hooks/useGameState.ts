@@ -30,7 +30,7 @@ function saveProgress(progress: GameProgress) {
 
 const initialProgress = loadProgress()
 
-export type GamePhase = 'playing' | 'celebrating' | 'wrong'
+export type GamePhase = 'playing' | 'departing' | 'celebrating' | 'wrong'
 
 export interface GameState {
   task: Task
@@ -114,7 +114,7 @@ export function useGameState(): GameState {
     const result = validateTrain(task, locomotiveId, selectedWagonType, wagonCount)
     setValidation(result)
     if (result.allCorrect) {
-      setPhase('celebrating')
+      setPhase('departing')
     } else {
       setPhase('wrong')
     }
@@ -138,6 +138,15 @@ export function useGameState(): GameState {
     setValidation(null)
     setPhase('playing')
   }, [phase, progress])
+
+  useEffect(() => {
+    if (phase === 'departing') {
+      const timer = setTimeout(() => {
+        setPhase('celebrating')
+      }, 2400)
+      return () => clearTimeout(timer)
+    }
+  }, [phase])
 
   useEffect(() => {
     if (phase === 'celebrating') {

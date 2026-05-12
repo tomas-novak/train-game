@@ -22,6 +22,7 @@ interface Props {
 export const TrackZone = forwardRef<HTMLDivElement, Props>(
   ({ trainItems, onRemoveItem, isOver, isBlocked, validation, phase }, ref) => {
     const isWrong = phase === 'wrong'
+    const isDeparting = phase === 'departing'
 
     // Only highlight wagon type errors on the wagons themselves.
     // Count errors are shown as a separate indicator so the child
@@ -82,24 +83,34 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
             }}
           >
             <div
-              className="animate-pulse"
+              className={isDeparting ? undefined : 'animate-pulse'}
               style={{
                 width: 18,
                 height: 18,
                 borderRadius: '50%',
-                background: '#ff2222',
-                boxShadow: '0 0 10px 5px rgba(255,40,40,0.75)',
+                background: isDeparting ? '#2c2c2c' : '#ff2222',
+                boxShadow: isDeparting ? 'none' : '0 0 10px 5px rgba(255,40,40,0.75)',
+                transition: 'background 0.3s, box-shadow 0.3s',
               }}
             />
             <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#2c2c2c' }} />
-            <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#2c2c2c' }} />
+            <div
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: '50%',
+                background: isDeparting ? '#22cc22' : '#2c2c2c',
+                boxShadow: isDeparting ? '0 0 10px 5px rgba(40,255,40,0.75)' : 'none',
+                transition: 'background 0.3s, box-shadow 0.3s',
+              }}
+            />
           </div>
           <div style={{ flex: 1, width: 4, background: '#666', borderRadius: 2 }} />
         </div>
 
         {/* Scrollable train row */}
         <div
-          className="absolute inset-0 flex items-center gap-1 overflow-x-auto overflow-y-hidden"
+          className={['absolute inset-0 flex items-center gap-1 overflow-y-hidden', isDeparting ? 'overflow-x-hidden train-depart' : 'overflow-x-auto'].join(' ')}
           style={{ paddingLeft: 'calc(10% + 36px)', paddingRight: '16px' }}
         >
           {trainItems.length === 0 ? (
