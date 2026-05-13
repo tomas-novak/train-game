@@ -34,12 +34,11 @@ export const Scene: FC<{ children: ReactNode; trackHeight?: number }> = ({ child
     <Cloud top="14%" left="6%" scale={1} />
     <Cloud top="22%" left="62%" scale={0.7} />
     <Cloud top="34%" left="30%" scale={0.55} />
-    {/* hills */}
+    {/* hills – bottom offset keeps them visible above the track+submit stack; formula calibrated for 140 and 200 */}
     <svg
       viewBox="0 0 400 200"
       preserveAspectRatio="none"
       className="absolute inset-x-0"
-      {/* bottom offset: hills peek above the track+submit stack; formula calibrated for 140 and 200 */}
       style={{ bottom: trackHeight - 10, height: 120 }}
     >
       <path d="M0,160 Q60,80 130,110 Q220,150 290,90 Q360,40 400,80 L400,200 L0,200 Z" fill={t.hillBack} />
