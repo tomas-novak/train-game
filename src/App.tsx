@@ -118,7 +118,7 @@ export default function App() {
 
   return (
     <div className="min-h-svh flex justify-center" style={{ background: t.skyBot }}>
-      <div className="w-full flex flex-col min-h-svh">
+      <div className="w-full flex flex-col">
         <Scene trackHeight={trackHeight}>
         <div
           ref={containerRef}
