@@ -119,7 +119,7 @@ export default function App() {
   return (
     <div className="min-h-svh flex justify-center" style={{ background: t.skyBot }}>
       <div className="w-full flex flex-col min-h-svh">
-      <Scene trackHeight={trackHeight}>
+        <Scene trackHeight={trackHeight}>
         <div
           ref={containerRef}
           className="relative w-full h-full flex flex-col select-none"
@@ -260,7 +260,7 @@ export default function App() {
             />
           )}
         </div>
-      </Scene>
+        </Scene>
       </div>
     </div>
   )

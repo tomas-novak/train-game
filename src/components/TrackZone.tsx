@@ -1,4 +1,4 @@
-import { forwardRef, type FC } from 'react'
+import { forwardRef, useId, type FC } from 'react'
 import type { KeyedTrainItem, ValidationResult } from '../types'
 import { LOCOMOTIVES } from '../data/locomotives'
 import { WAGONS } from '../data/wagons'
@@ -68,6 +68,7 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
   ({ trainItems, onRemoveItem, isOver, isBlocked, validation, phase, trackHeight = 140 }, ref) => {
     const isWrong = phase === 'wrong'
     const isDeparting = phase === 'departing'
+    const patternId = useId()
 
     const railOff = Math.round(trackHeight * 0.371)
     const slpY    = railOff + 4
@@ -111,12 +112,12 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
         {/* sleepers – pattern tiles at fixed pitch regardless of container width */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none">
           <defs>
-            <pattern id="track-sleepers" x="0" y="0" width="72" height={trackHeight} patternUnits="userSpaceOnUse">
+            <pattern id={patternId} x="0" y="0" width="72" height={trackHeight} patternUnits="userSpaceOnUse">
               <rect x="4" y={slpY} width="28" height={slpH} rx="3" fill={t.tie} />
               <rect x="40" y={slpY} width="28" height={slpH} rx="3" fill={t.tieDark} />
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="url(#track-sleepers)" opacity={activeOver ? 0.4 : 0.9} />
+          <rect width="100%" height="100%" fill={`url(#${patternId})`} opacity={activeOver ? 0.4 : 0.9} />
         </svg>
 
         {/* rails */}
@@ -148,9 +149,9 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
         >
           {trainItems.length === 0 ? (
             <div className="flex gap-1 opacity-30 select-none pointer-events-none items-center">
-              <PlaceholderLoco size={locoSz} />
-              <PlaceholderWagon size={wagonSz} />
-              <PlaceholderWagon size={wagonSz} />
+              <PlaceholderLoco size={Math.round(locoSz * 0.957)} />
+              <PlaceholderWagon size={Math.round(wagonSz * 0.923)} />
+              <PlaceholderWagon size={Math.round(wagonSz * 0.923)} />
             </div>
           ) : (
             <>
