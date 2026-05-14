@@ -14,7 +14,7 @@ const Signal: FC<{ isGo: boolean; trackHeight: number }> = ({ isGo, trackHeight 
   const lampH  = Math.round(trackHeight * 0.543)
   const lampW  = Math.round(trackHeight * 0.229)
   const lightD = Math.round(trackHeight * 0.129)
-  const left   = Math.round(trackHeight * 0.1)
+  const left   = Math.round(trackHeight * 0.286)
 
   return (
     <div className="absolute pointer-events-none flex flex-col" style={{ left, top: -2, height: trackHeight + 2 }}>
@@ -73,7 +73,7 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
     const railOff = Math.round(trackHeight * 0.371)
     const slpY    = railOff + 4
     const slpH    = trackHeight - railOff * 2 - 8
-    const padL    = Math.round(trackHeight * 0.457)
+    const padL    = Math.round(trackHeight * 0.686)
     const locoSz  = Math.round(trackHeight * 0.657)
     const wagonSz = Math.round(trackHeight * 0.557)
 
