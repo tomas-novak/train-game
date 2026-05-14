@@ -16,10 +16,12 @@ interface PaletteCardProps {
   Icon: FC<TrainIcon>
   iconSize: number
   dimmed: boolean
+  cardMinW: number
+  cardMinH: number
   onPointerDown: (e: React.PointerEvent) => void
 }
 
-function PaletteCard({ Icon, iconSize, dimmed, onPointerDown }: PaletteCardProps) {
+function PaletteCard({ Icon, iconSize, dimmed, cardMinW, cardMinH, onPointerDown }: PaletteCardProps) {
   return (
     <div
       onPointerDown={onPointerDown}
@@ -29,8 +31,8 @@ function PaletteCard({ Icon, iconSize, dimmed, onPointerDown }: PaletteCardProps
       style={{
         background: t.panel,
         padding: 8,
-        minWidth: 92,
-        minHeight: 76,
+        minWidth: cardMinW,
+        minHeight: cardMinH,
         boxShadow: `0 6px 14px ${t.softShadow}, inset 0 -3px 0 ${t.panelEdge}`,
       }}
     >
@@ -42,13 +44,21 @@ function PaletteCard({ Icon, iconSize, dimmed, onPointerDown }: PaletteCardProps
 interface Props {
   trainItems: KeyedTrainItem[]
   onDragStart: (payload: DragStartPayload, e: React.PointerEvent) => void
+  isTablet?: boolean
 }
 
-export function DragPalette({ trainItems, onDragStart }: Props) {
+export function DragPalette({ trainItems, onDragStart, isTablet = false }: Props) {
   const hasLoco = trainItems.some((item) => item.kind === 'loco')
   const placedWagonType = (
     trainItems.find((item) => item.kind === 'wagon') as Extract<KeyedTrainItem, { kind: 'wagon' }> | undefined
   )?.type
+
+  const locoDisplay = isTablet ? 120 : 86
+  const locoDrag    = isTablet ? 134 : 96
+  const wagonDisplay = isTablet ? 98 : 70
+  const wagonDrag    = isTablet ? 112 : 80
+  const cardMinW     = isTablet ? 130 : 92
+  const cardMinH     = isTablet ? 106 : 76
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -58,11 +68,13 @@ export function DragPalette({ trainItems, onDragStart }: Props) {
           <PaletteCard
             key={loco.id}
             Icon={loco.icon}
-            iconSize={86}
+            iconSize={locoDisplay}
             dimmed={hasLoco}
+            cardMinW={cardMinW}
+            cardMinH={cardMinH}
             onPointerDown={(e) => {
               e.preventDefault()
-              onDragStart({ item: { kind: 'loco', id: loco.id }, Icon: loco.icon, iconSize: 96 }, e)
+              onDragStart({ item: { kind: 'loco', id: loco.id }, Icon: loco.icon, iconSize: locoDrag }, e)
             }}
           />
         ))}
@@ -83,11 +95,13 @@ export function DragPalette({ trainItems, onDragStart }: Props) {
             <PaletteCard
               key={wagon.type}
               Icon={wagon.icon}
-              iconSize={70}
+              iconSize={wagonDisplay}
               dimmed={dimmed}
+              cardMinW={cardMinW}
+              cardMinH={cardMinH}
               onPointerDown={(e) => {
                 e.preventDefault()
-                onDragStart({ item: { kind: 'wagon', type: wagon.type }, Icon: wagon.icon, iconSize: 80 }, e)
+                onDragStart({ item: { kind: 'wagon', type: wagon.type }, Icon: wagon.icon, iconSize: wagonDrag }, e)
               }}
             />
           )
