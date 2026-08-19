@@ -162,12 +162,237 @@ export const DieselLoco: FC<TrainIcon> = ({ size = 100, t }) => {
   )
 }
 
+// ── WAGON LOADS ───────────────────────────────────────────────────────────────
+//
+// What the child actually reads. The wagons used to be empty shells, so the game
+// asked him to know that milk belongs in the round one and coal in the
+// open-topped one — a category he has no name for and cannot hold in his head.
+// Every load below is instead the SAME specific object the task shows him: the
+// milk task draws a milk bottle, and the tank wagon carries that same milk
+// bottle. Matching a picture to a picture is something a four-year-old can do
+// with no instruction at all.
+//
+// Drawn the way the reference draws a payload: one nameable everyday object per
+// wagon, big (60-80% of the opening), flat, no strokes, and sitting in or on the
+// wagon rather than hovering over it.
+
+/** Coal: a heap of angular near-black lumps mounded over the hopper rim. */
+function coalLoad(s: SkyTheme['coal']) {
+  return (
+    <g>
+      <polygon points="9,23 17,12 26,16 35,5 46,11 56,3 66,12 76,8 85,15 91,23" fill={s.a} />
+      <polygon points="14,23 21,11 30,15 27,23" fill={s.b} />
+      <polygon points="32,23 40,6 50,12 47,23" fill={s.c} />
+      <polygon points="52,23 59,4 68,11 65,23" fill={s.b} />
+      <polygon points="69,23 77,9 86,16 83,23" fill={s.c} />
+      <polygon points="21,12 27,15 24,18 18,16" fill={s.hi} opacity={0.55} />
+      <polygon points="40,7 48,12 43,16 37,12" fill={s.hi} opacity={0.5} />
+      <polygon points="59,5 67,11 62,15 56,10" fill={s.hi} opacity={0.55} />
+      <polygon points="77,10 85,16 80,19 74,15" fill={s.hi} opacity={0.5} />
+    </g>
+  )
+}
+
+/** Sand: a smooth bright dune, the shape opposite of coal so the two never blur. */
+function sandLoad(s: SkyTheme['sand']) {
+  return (
+    <g>
+      <path d="M8,23 Q26,8 50,5 Q74,8 92,23 Z" fill={s.b} />
+      <path d="M8,23 Q26,8 50,5 Q58,14 55,23 Z" fill={s.a} />
+      <path d="M26,23 Q34,10 50,6 Q52,13 44,23 Z" fill={s.hi} opacity={0.75} />
+      {([[22, 18], [34, 14], [46, 11], [58, 14], [70, 18], [80, 20], [40, 19]] as [number, number][]).map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={1.3} fill={s.dot} opacity={0.65} />
+      ))}
+    </g>
+  )
+}
+
+/**
+ * Milk: a crate of white bottles standing on the crown of the tank.
+ *
+ * The hard constraint here is the wagon underneath. The barrel spans y24-52 in
+ * this frame, and the level-3 card the child must eventually recognise is that
+ * bare barrel with a dome on it. Two earlier versions painted the load — a
+ * bottle, then a crate on a navy cradle bar — straight across the cylinder, so
+ * the loaded tank read as "bottles on a grey flatbed" and the one shape he has
+ * to carry forward was the one shape level 1 never showed him. So every mark
+ * below sits at y <= 24: nothing opaque, and above all no dark horizontal bar,
+ * ever touches the barrel. Loaded and empty tank share one body.
+ *
+ * The bottles are white on a white card, so each one gets a navy rim of its own
+ * and stands in a strong blue crate — the reference's basket-of-apples trick,
+ * where a saturated container is what makes a pale payload nameable.
+ */
+function milkLoad(s: SkyTheme['milk']) {
+  const bottle = (w: number, sy: number, nw: number, topY: number) => (cx: number) =>
+    `M${cx - w},24 L${cx - w},${sy} Q${cx - w},${sy - 5} ${cx - nw},${sy - 5.6} L${cx - nw},${topY} L${cx + nw},${topY} L${cx + nw},${sy - 5.6} Q${cx + w},${sy - 5} ${cx + w},${sy} L${cx + w},24 Z`
+  const rim = bottle(7.2, 12.4, 4.5, 1.8)
+  const body = bottle(5.4, 12.8, 2.9, 3.4)
+  const bottles = [36, 50, 64]
+  return (
+    <g>
+      {bottles.map((cx) => (
+        <path key={`r${cx}`} d={rim(cx)} fill={s.rim} />
+      ))}
+      {bottles.map((cx) => (
+        <g key={`b${cx}`}>
+          <path d={body(cx)} fill={s.bottle} />
+          <rect x={cx - 3.3} y={3.6} width={6.6} height={3.8} rx={1.2} fill={s.cap} />
+        </g>
+      ))}
+      {/* the crate, sitting on the crown of the barrel and no lower */}
+      <rect x="22.5" y="13.4" width="55" height="3.8" rx="1.8" fill={s.rim} />
+      <rect x="24" y="16.6" width="52" height="7.4" fill={s.crate} />
+      <rect x="24" y="16.6" width="52" height="2.2" fill={s.crateHi} />
+      <rect x="41" y="16.6" width="2.6" height="7.4" fill={s.rim} opacity={0.5} />
+      <rect x="56.4" y="16.6" width="2.6" height="7.4" fill={s.rim} opacity={0.5} />
+    </g>
+  )
+}
+
+/**
+ * Fuel: a red jerrycan — handle, spout, X-braced panel — standing on the crown
+ * of the tank, under the same y <= 24 rule as the milk crate.
+ *
+ * It used to be a dusty-rose drum with a cream diagonal-striped band across the
+ * top, which a critic reading the card blind called a layer cake. A jerrycan is
+ * the one fuel object with a silhouette of its own.
+ */
+function fuelLoad(s: SkyTheme['fuel']) {
+  return (
+    <g>
+      <rect x="40" y="1.4" width="20" height="3.6" rx="1.8" fill={s.canDark} />
+      <rect x="40" y="3.4" width="4.4" height="5" fill={s.canDark} />
+      <rect x="55.6" y="3.4" width="4.4" height="5" fill={s.canDark} />
+      <rect x="62" y="3.6" width="7.5" height="6.4" rx="2.2" fill={s.cap} />
+      <rect x="66" y="6.4" width="6" height="3.4" rx="1.7" fill={s.cap} />
+      <rect x="31" y="7.4" width="38" height="16.6" rx="3" fill={s.can} />
+      <rect x="31" y="7.4" width="38" height="3" rx="1.5" fill={s.canHi} />
+      <rect x="33.5" y="10.6" width="4" height="13.4" fill={s.canHi} opacity={0.55} />
+      <line x1="37" y1="11.4" x2="63" y2="22" stroke={s.canDark} strokeWidth="2.8" />
+      <line x1="63" y1="11.4" x2="37" y2="22" stroke={s.canDark} strokeWidth="2.8" />
+    </g>
+  )
+}
+
+/**
+ * Apples: one red and one green apple over the rim of a woven basket, filling
+ * the open door of the box wagon. Straight off the reference, which sets a
+ * basket of exactly two fully saturated apples in the box wagon's opening.
+ *
+ * The previous pass drew two desaturated salmon circles on a mid-brown wall with
+ * the leaf riding up over the roof beam, and a critic could not name it. Now the
+ * doorway behind is the darkest brown in the palette, the apples are saturated
+ * and of two different colours, and every mark stays inside the opening (y >= 23)
+ * so nothing leaks onto the roof.
+ */
+function applesLoad(s: SkyTheme['apples']) {
+  return (
+    <g>
+      <circle cx="59.5" cy="39" r="7.6" fill={s.greenDark} />
+      <circle cx="59.5" cy="39" r="6" fill={s.green} />
+      <ellipse cx="57.4" cy="36.6" rx="2" ry="1.9" fill="#fff" opacity={0.4} />
+      <path d="M43,28 Q44.6,26.4 45.8,26" stroke={s.stem} strokeWidth="2" strokeLinecap="round" fill="none" />
+      <ellipse cx="50" cy="27.4" rx="5" ry="2.6" fill={s.leaf} transform="rotate(14 50 27.4)" />
+      <circle cx="43" cy="37.5" r="10.4" fill={s.redDark} />
+      <circle cx="43" cy="37.5" r="8.6" fill={s.red} />
+      <ellipse cx="39.4" cy="34" rx="2.9" ry="2.7" fill={s.hi} opacity={0.8} />
+      {/* the basket they sit in */}
+      <polygon points="32,44.4 68,44.4 64.2,54.6 35.8,54.6" fill={s.basket} />
+      <path d="M33.4,48 L66.6,48 M34.4,51.4 L65.6,51.4" stroke={s.basketDark} strokeWidth="1.4" opacity={0.75} />
+      <path d="M42,44.4 L41.2,54.6 M50,44.4 L50,54.6 M58,44.4 L58.8,54.6" stroke={s.basketDark} strokeWidth="1.2" opacity={0.55} />
+      <rect x="29.5" y="41.4" width="41" height="4.8" rx="2.4" fill={s.basketDark} />
+      <rect x="29.5" y="41.4" width="41" height="1.6" rx="0.8" fill={s.basket} opacity={0.7} />
+    </g>
+  )
+}
+
+/**
+ * Parcels: a wrapped present — amber box, red ribbon, red bow — in the box
+ * wagon's open door.
+ *
+ * It used to be two brown boxes in a brown doorway on a brown wagon: a critic
+ * reading the card blind saw "a smudge with a pink cross" and the second box was
+ * invisible. One box in a colour the wagon never uses, with a bow, is a thing a
+ * four-year-old names on sight.
+ */
+function parcelsLoad(s: SkyTheme['parcels']) {
+  return (
+    <g>
+      <ellipse cx="43.5" cy="28.5" rx="6.4" ry="4.4" fill={s.ribbon} transform="rotate(-18 43.5 28.5)" />
+      <ellipse cx="56.5" cy="28.5" rx="6.4" ry="4.4" fill={s.ribbon} transform="rotate(18 56.5 28.5)" />
+      <ellipse cx="43.5" cy="28.5" rx="2.6" ry="1.8" fill={s.ribbonDark} opacity={0.5} transform="rotate(-18 43.5 28.5)" />
+      <ellipse cx="56.5" cy="28.5" rx="2.6" ry="1.8" fill={s.ribbonDark} opacity={0.5} transform="rotate(18 56.5 28.5)" />
+      <rect x="30.5" y="32" width="39" height="8" rx="1.6" fill={s.box} />
+      <rect x="30.5" y="32" width="39" height="2.6" rx="1.3" fill={s.boxHi} />
+      <rect x="33" y="40" width="34" height="14" rx="1.6" fill={s.box} />
+      <rect x="61" y="40" width="6" height="14" fill={s.boxDark} opacity={0.45} />
+      <rect x="46.4" y="32" width="7.2" height="22" fill={s.ribbon} />
+      <rect x="46.4" y="32" width="2.2" height="22" fill={s.ribbonDark} opacity={0.35} />
+      <circle cx="50" cy="30" r="3.4" fill={s.ribbonDark} />
+    </g>
+  )
+}
+
+/** Cars: the same blue car the task shows, parked on the flat deck. */
+function carsLoad(s: SkyTheme['cars']) {
+  return (
+    <g>
+      <path d="M26,32 Q30,17 39,16 L59,16 Q68,18 72,32 Z" fill={s.bodyDark} />
+      <path d="M31,31 Q34,21 40,20 L48,20 L48,31 Z" fill={s.window} />
+      <path d="M52,20 L58,20 Q64,22 67,31 L52,31 Z" fill={s.window} opacity={0.85} />
+      <rect x="14" y="30" width="72" height="13" rx="5" fill={s.body} />
+      <rect x="14" y="30" width="72" height="3" rx="1.5" fill={s.window} opacity={0.35} />
+      <ellipse cx="84" cy="34" rx="3" ry="2.6" fill={s.head} />
+      <circle cx="28" cy="43" r="6" fill={s.wheel} />
+      <circle cx="28" cy="43" r="2.6" fill={s.window} />
+      <circle cx="72" cy="43" r="6" fill={s.wheel} />
+      <circle cx="72" cy="43" r="2.6" fill={s.window} />
+    </g>
+  )
+}
+
+/** Logs: three stacked trunks with their end grain showing, between the stakes. */
+function logsLoad(s: SkyTheme['logs']) {
+  const p = { outer: s.outer, mid: s.mid, inner: s.inner, crack: s.crack }
+  return (
+    <g>
+      <LogShape cx={50} cy={41} w={58} h={13} {...p} />
+      <LogShape cx={48} cy={30} w={54} h={13} {...p} />
+      <LogShape cx={50} cy={20} w={42} h={12} {...p} />
+    </g>
+  )
+}
+
+/** People: passengers leaning out of the coach windows, faces and all. */
+function peopleLoad(s: SkyTheme['people']) {
+  const riders: { x: number; skin: string; shirt: string }[] = [
+    { x: 16, skin: s.skinA, shirt: s.shirtA },
+    { x: 48, skin: s.skinB, shirt: s.shirtB },
+    { x: 80, skin: s.skinA, shirt: s.shirtB },
+  ]
+  return (
+    <g>
+      {riders.map((r) => (
+        <g key={r.x}>
+          <path d={`M${r.x - 7},40 Q${r.x - 6},33 ${r.x},32 Q${r.x + 6},33 ${r.x + 7},40 Z`} fill={r.shirt} />
+          <circle cx={r.x} cy={32} r={6} fill={r.skin} />
+          <path d={`M${r.x - 6},30 Q${r.x - 5},25 ${r.x},25 Q${r.x + 5},25 ${r.x + 6},30 Q${r.x + 4},27 ${r.x},27 Q${r.x - 4},27 ${r.x - 6},30 Z`} fill={s.hair} />
+          <circle cx={r.x - 2.2} cy={32.4} r={1.1} fill={s.hair} />
+          <circle cx={r.x + 2.2} cy={32.4} r={1.1} fill={s.hair} />
+        </g>
+      ))}
+    </g>
+  )
+}
+
 // ── WAGONS ────────────────────────────────────────────────────────────────────
 
-export const HopperWagon: FC<TrainIcon> = ({ size = 80, t }) => {
+export const HopperWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const s = (t ?? SKY).hopper as SkyTheme['hopper']
+  const sky = t ?? SKY
+  const s = sky.hopper as SkyTheme['hopper']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -190,6 +415,7 @@ export const HopperWagon: FC<TrainIcon> = ({ size = 80, t }) => {
       <rect x="4" y="34" width="92" height="7" fill={s.stripe} />
       <rect x="4" y="34" width="92" height="2" fill="#fff" opacity={0.3} />
       <rect x="36" y="50" width="28" height="6" rx="2" fill={s.body[1]} />
+      {showCargo === 'sand' ? sandLoad(sky.sand) : showCargo === undefined ? null : coalLoad(sky.coal)}
       <Wheel cx={20} cy={64} r={7} wheel={s.wheel} wheelHub={s.bodyHi} />
       <Wheel cx={38} cy={64} r={7} wheel={s.wheel} wheelHub={s.bodyHi} />
       <Wheel cx={62} cy={64} r={7} wheel={s.wheel} wheelHub={s.bodyHi} />
@@ -198,10 +424,11 @@ export const HopperWagon: FC<TrainIcon> = ({ size = 80, t }) => {
   )
 }
 
-export const TankWagon: FC<TrainIcon> = ({ size = 80, t }) => {
+export const TankWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const s = (t ?? SKY).tank as SkyTheme['tank']
+  const sky = t ?? SKY
+  const s = sky.tank as SkyTheme['tank']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -245,18 +472,30 @@ export const TankWagon: FC<TrainIcon> = ({ size = 80, t }) => {
       {([40, 46, 52, 58] as number[]).map((x) => (
         <circle key={x} cx={x} cy={24} r="0.5" fill={s.band} opacity={0.7} />
       ))}
-      <ellipse cx="50" cy="20" rx="9" ry="3" fill={s.saddle} opacity={0.55} />
-      <rect x="41" y="14" width="18" height="8" rx="3" fill={`url(#man${id})`} />
-      <rect x="41" y="14" width="18" height="2.5" rx="1.25" fill="#fff" opacity={0.55} />
-      {([44, 48, 52, 56] as number[]).map((x) => (
-        <circle key={x} cx={x} cy="18" r="0.9" fill={s.saddle} />
-      ))}
-      <ellipse cx="50" cy="13" rx="7" ry="2.2" fill={s.cap} />
-      <ellipse cx="50" cy="12.5" rx="5" ry="1.2" fill={s.bodyHi} opacity={0.8} />
-      <rect x="49" y="8" width="2" height="6" fill={s.saddle} />
-      <circle cx="50" cy="8" r="3" fill="none" stroke={s.saddle} strokeWidth="1.2" />
-      <line x1="47" y1="8" x2="53" y2="8" stroke={s.saddle} strokeWidth="1.2" />
-      <line x1="50" y1="5" x2="50" y2="11" stroke={s.saddle} strokeWidth="1.2" />
+      {/* The dome and the valve wheel, or — when the wagon is carrying something —
+          the load standing in their place, on the crown of the barrel. Both
+          loads are authored entirely at y <= 24, so the barrel itself is never
+          repainted and the loaded tank keeps the silhouette of the empty one. */}
+      {showCargo === undefined ? (
+        <>
+          <ellipse cx="50" cy="20" rx="9" ry="3" fill={s.saddle} opacity={0.55} />
+          <rect x="41" y="14" width="18" height="8" rx="3" fill={`url(#man${id})`} />
+          <rect x="41" y="14" width="18" height="2.5" rx="1.25" fill="#fff" opacity={0.55} />
+          {([44, 48, 52, 56] as number[]).map((x) => (
+            <circle key={x} cx={x} cy="18" r="0.9" fill={s.saddle} />
+          ))}
+          <ellipse cx="50" cy="13" rx="7" ry="2.2" fill={s.cap} />
+          <ellipse cx="50" cy="12.5" rx="5" ry="1.2" fill={s.bodyHi} opacity={0.8} />
+          <rect x="49" y="8" width="2" height="6" fill={s.saddle} />
+          <circle cx="50" cy="8" r="3" fill="none" stroke={s.saddle} strokeWidth="1.2" />
+          <line x1="47" y1="8" x2="53" y2="8" stroke={s.saddle} strokeWidth="1.2" />
+          <line x1="50" y1="5" x2="50" y2="11" stroke={s.saddle} strokeWidth="1.2" />
+        </>
+      ) : showCargo === 'fuel' ? (
+        fuelLoad(sky.fuel)
+      ) : (
+        milkLoad(sky.milk)
+      )}
       <line x1="6" y1="30" x2="6" y2="52" stroke={s.saddle} strokeWidth="1.4" />
       <line x1="14" y1="30" x2="14" y2="52" stroke={s.saddle} strokeWidth="1.4" />
       {([34, 40, 46] as number[]).map((y) => (
@@ -277,10 +516,11 @@ export const TankWagon: FC<TrainIcon> = ({ size = 80, t }) => {
   )
 }
 
-export const BoxWagon: FC<TrainIcon> = ({ size = 80, t }) => {
+export const BoxWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const s = (t ?? SKY).box as SkyTheme['box']
+  const sky = t ?? SKY
+  const s = sky.box as SkyTheme['box']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -298,12 +538,28 @@ export const BoxWagon: FC<TrainIcon> = ({ size = 80, t }) => {
       <rect x="6" y="20" width="88" height="38" rx="3" fill={`url(#b${id})`} />
       <rect x="3" y="14" width="94" height="9" rx="3" fill={`url(#r${id})`} />
       <rect x="6" y="15" width="88" height="3" rx="1.5" fill="#fff" opacity={0.18} />
-      <rect x="30" y="22" width="40" height="34" rx="2" fill={s.door} />
-      <rect x="31" y="23" width="38" height="6" rx="1" fill={s.doorHi} opacity={0.7} />
-      <line x1="50" y1="22" x2="50" y2="56" stroke={s.doorEdge} strokeWidth="1.5" opacity={0.55} />
-      <rect x="28" y="20" width="44" height="4" rx="1" fill={s.doorEdge} opacity={0.5} />
-      <rect x="28" y="54" width="44" height="4" rx="1" fill={s.doorEdge} opacity={0.5} />
-      <rect x="62" y="36" width="5" height="8" rx="2.5" fill={s.doorEdge} />
+      {/* Shut sliding door, or — when loaded — the door slid open with the goods
+          sitting in the opening, which is exactly how the reference shows a box
+          wagon full of fruit. */}
+      {showCargo === undefined ? (
+        <>
+          <rect x="30" y="22" width="40" height="34" rx="2" fill={s.door} />
+          <rect x="31" y="23" width="38" height="6" rx="1" fill={s.doorHi} opacity={0.7} />
+          <line x1="50" y1="22" x2="50" y2="56" stroke={s.doorEdge} strokeWidth="1.5" opacity={0.55} />
+          <rect x="28" y="20" width="44" height="4" rx="1" fill={s.doorEdge} opacity={0.5} />
+          <rect x="28" y="54" width="44" height="4" rx="1" fill={s.doorEdge} opacity={0.5} />
+          <rect x="62" y="36" width="5" height="8" rx="2.5" fill={s.doorEdge} />
+        </>
+      ) : (
+        <>
+          {/* The unlit inside of the wagon. A saturated payload needs a dark
+              ground behind it, or the whole card is one brown smudge. */}
+          <rect x="28" y="22" width="44" height="34" rx="2" fill={s.opening} />
+          <rect x="26" y="20" width="48" height="4" rx="1" fill={s.doorEdge} />
+          <rect x="26" y="54" width="48" height="4" rx="1" fill={s.doorEdge} />
+          {showCargo === 'parcels' ? parcelsLoad(sky.parcels) : applesLoad(sky.apples)}
+        </>
+      )}
       <rect x="6" y="22" width="22" height="34" fill={s.bodyHi} opacity={0.25} />
       <rect x="72" y="22" width="22" height="34" fill={s.body[1]} opacity={0.18} />
       <Wheel cx={20} cy={64} r={7} wheel={s.wheel} wheelHub={s.bodyHi} />
@@ -314,10 +570,11 @@ export const BoxWagon: FC<TrainIcon> = ({ size = 80, t }) => {
   )
 }
 
-export const FlatcarWagon: FC<TrainIcon> = ({ size = 80, t }) => {
+export const FlatcarWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const s = (t ?? SKY).flatcar as SkyTheme['flatcar']
+  const sky = t ?? SKY
+  const s = sky.flatcar as SkyTheme['flatcar']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -337,6 +594,7 @@ export const FlatcarWagon: FC<TrainIcon> = ({ size = 80, t }) => {
       <rect x="28" y="40" width="3" height="7" rx="1" fill={s.stake} opacity={0.9} />
       <rect x="50" y="40" width="3" height="7" rx="1" fill={s.stake} opacity={0.9} />
       <rect x="72" y="40" width="3" height="7" rx="1" fill={s.stake} opacity={0.9} />
+      {showCargo === undefined ? null : carsLoad(sky.cars)}
       <Wheel cx={20} cy={64} r={7} wheel={s.wheel} wheelHub={s.deckHi} />
       <Wheel cx={38} cy={64} r={7} wheel={s.wheel} wheelHub={s.deckHi} />
       <Wheel cx={62} cy={64} r={7} wheel={s.wheel} wheelHub={s.deckHi} />
@@ -345,10 +603,11 @@ export const FlatcarWagon: FC<TrainIcon> = ({ size = 80, t }) => {
   )
 }
 
-export const PassengerWagon: FC<TrainIcon> = ({ size = 80, t }) => {
+export const PassengerWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const s = (t ?? SKY).passenger as SkyTheme['passenger']
+  const sky = t ?? SKY
+  const s = sky.passenger as SkyTheme['passenger']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -377,6 +636,7 @@ export const PassengerWagon: FC<TrainIcon> = ({ size = 80, t }) => {
       <rect x="38" y="36" width="20" height="22" rx="2" fill={s.door} />
       <line x1="48" y1="38" x2="48" y2="56" stroke={s.windowFrame} strokeWidth="1.2" opacity={0.55} />
       <circle cx="55" cy="48" r="1.5" fill={s.windowFrame} />
+      {showCargo === undefined ? null : peopleLoad(sky.people)}
       <Wheel cx={20} cy={64} r={7} wheel={s.wheel} wheelHub={s.bodyHi} />
       <Wheel cx={38} cy={64} r={7} wheel={s.wheel} wheelHub={s.bodyHi} />
       <Wheel cx={62} cy={64} r={7} wheel={s.wheel} wheelHub={s.bodyHi} />
@@ -385,10 +645,11 @@ export const PassengerWagon: FC<TrainIcon> = ({ size = 80, t }) => {
   )
 }
 
-export const LogcarWagon: FC<TrainIcon> = ({ size = 80, t }) => {
+export const LogcarWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const s = (t ?? SKY).logcar as SkyTheme['logcar']
+  const sky = t ?? SKY
+  const s = sky.logcar as SkyTheme['logcar']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -408,6 +669,7 @@ export const LogcarWagon: FC<TrainIcon> = ({ size = 80, t }) => {
       <rect x="82" y="22" width="2" height="28" fill="#fff" opacity={0.18} />
       <rect x="6" y="44" width="88" height="4" rx="1.5" fill={s.stake} opacity={0.85} />
       <rect x="6" y="44" width="88" height="1.2" rx="0.6" fill="#fff" opacity={0.25} />
+      {showCargo === undefined ? null : logsLoad(sky.logs)}
       <Wheel cx={20} cy={64} r={7} wheel={s.wheel} wheelHub={s.log3} />
       <Wheel cx={38} cy={64} r={7} wheel={s.wheel} wheelHub={s.log3} />
       <Wheel cx={62} cy={64} r={7} wheel={s.wheel} wheelHub={s.log3} />
@@ -447,54 +709,53 @@ export const SandCargo: FC<TrainIcon> = ({ size = 56, t }) => {
   )
 }
 
+/**
+ * The task pictures below are the same objects the wagons carry — the same blue
+ * crate of white bottles, the same red jerrycan, the same basket of apples, the
+ * same present — laid out to fill a square instead of a wagon roof or a doorway.
+ * Matching a picture to the same picture is the one comparison a four-year-old
+ * makes with no instruction at all, and it is the whole reason the loads exist.
+ */
 export const MilkCargo: FC<TrainIcon> = ({ size = 56, t }) => {
-  const raw = useId()
-  const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? SKY).milk as SkyTheme['milk']
+  const bottle = (w: number, sy: number, nw: number, topY: number) => (cx: number) =>
+    `M${cx - w},52 L${cx - w},${sy} Q${cx - w},${sy - 11} ${cx - nw},${sy - 12.4} L${cx - nw},${topY} L${cx + nw},${topY} L${cx + nw},${sy - 12.4} Q${cx + w},${sy - 11} ${cx + w},${sy} L${cx + w},52 Z`
+  const rim = bottle(8.4, 26, 5.2, 5)
+  const body = bottle(6.3, 27, 3.4, 7)
+  const bottles = [14, 30, 46]
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id={`m${id}`} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stopColor={s.bottle} />
-          <stop offset="1" stopColor={s.shadow} />
-        </linearGradient>
-      </defs>
-      <ellipse cx="30" cy="56" rx="14" ry="2.5" fill="rgba(0,0,0,0.18)" />
-      <path d="M20,56 L18,32 Q14,22 18,14 L22,8 L38,8 L42,14 Q46,22 42,32 L40,56 Z" fill={`url(#m${id})`} />
-      <path d="M22,16 Q18,22 20,30 L22,30 Q21,22 24,16 Z" fill="#fff" opacity={0.7} />
-      <rect x="17" y="32" width="26" height="18" rx="2" fill={s.label} />
-      <rect x="17" y="32" width="26" height="3" fill={s.labelHi} opacity={0.55} />
-      <circle cx="30" cy="41" r="4.5" fill="#fff" opacity={0.85} />
-      <rect x="22" y="4" width="16" height="7" rx="3" fill={s.cap} />
-      <rect x="22" y="4" width="16" height="2.5" rx="1" fill="#fff" opacity={0.4} />
+      {bottles.map((cx) => <path key={`r${cx}`} d={rim(cx)} fill={s.rim} />)}
+      {bottles.map((cx) => (
+        <g key={`b${cx}`}>
+          <path d={body(cx)} fill={s.bottle} />
+          <rect x={cx - 3.9} y={7.4} width={7.8} height={4.4} rx={1.4} fill={s.cap} />
+        </g>
+      ))}
+      <rect x="1.5" y="28.5" width="57" height="4.4" rx="2.2" fill={s.rim} />
+      <rect x="3" y="32.2" width="54" height="19.8" rx="1.5" fill={s.crate} />
+      <rect x="3" y="32.2" width="54" height="3.4" fill={s.crateHi} />
+      <rect x="20.5" y="32.2" width="3" height="19.8" fill={s.rim} opacity={0.5} />
+      <rect x="36.5" y="32.2" width="3" height="19.8" fill={s.rim} opacity={0.5} />
     </svg>
   )
 }
 
 export const FuelCargo: FC<TrainIcon> = ({ size = 56, t }) => {
-  const raw = useId()
-  const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? SKY).fuel as SkyTheme['fuel']
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id={`f${id}`} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stopColor={s.drumHi} />
-          <stop offset="0.5" stopColor={s.drum} />
-          <stop offset="1" stopColor={s.band} />
-        </linearGradient>
-      </defs>
-      <ellipse cx="30" cy="56" rx="18" ry="2.5" fill="rgba(0,0,0,0.18)" />
-      <rect x="10" y="12" width="40" height="44" rx="3" fill={`url(#f${id})`} />
-      <ellipse cx="30" cy="12" rx="20" ry="4" fill={s.drumHi} />
-      <rect x="10" y="26" width="40" height="4" fill={s.band} opacity={0.85} />
-      <rect x="10" y="40" width="40" height="4" fill={s.band} opacity={0.85} />
-      <rect x="14" y="14" width="32" height="10" rx="1.5" fill={s.hazard} />
-      {([14, 22, 30, 38] as number[]).map((x) => (
-        <line key={x} x1={x} y1="14" x2={x + 6} y2="24" stroke={s.band} strokeWidth="2.5" />
-      ))}
-      <rect x="24" y="6" width="12" height="7" rx="2" fill={s.cap} />
-      <rect x="27" y="3" width="6" height="5" rx="1" fill={s.cap} opacity={0.85} />
+      <ellipse cx="30" cy="56" rx="20" ry="2.5" fill="rgba(0,0,0,0.18)" />
+      <rect x="17" y="4" width="26" height="5" rx="2.5" fill={s.canDark} />
+      <rect x="17" y="7" width="6" height="8" fill={s.canDark} />
+      <rect x="37" y="7" width="6" height="8" fill={s.canDark} />
+      <rect x="44" y="8" width="10" height="8.5" rx="3" fill={s.cap} />
+      <rect x="49" y="12" width="8" height="4.5" rx="2.2" fill={s.cap} />
+      <rect x="7" y="14" width="46" height="40" rx="4" fill={s.can} />
+      <rect x="7" y="14" width="46" height="4.5" rx="2.2" fill={s.canHi} />
+      <rect x="10.5" y="19" width="5.5" height="35" fill={s.canHi} opacity={0.55} />
+      <line x1="14" y1="21" x2="46" y2="49" stroke={s.canDark} strokeWidth="4" />
+      <line x1="46" y1="21" x2="14" y2="49" stroke={s.canDark} strokeWidth="4" />
     </svg>
   )
 }
@@ -503,16 +764,20 @@ export const ApplesCargo: FC<TrainIcon> = ({ size = 56, t }) => {
   const s = (t ?? SKY).apples as SkyTheme['apples']
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="30" cy="56" rx="22" ry="2.5" fill="rgba(0,0,0,0.18)" />
-      <circle cx="40" cy="38" r="16" fill={s.redDark} />
-      <circle cx="40" cy="38" r="13" fill={s.red} />
-      <ellipse cx="35" cy="33" rx="5" ry="5" fill={s.hi} opacity={0.55} />
-      <path d="M40,22 Q42,16 44,15" stroke={s.stem} strokeWidth="2.5" strokeLinecap="round" fill="none" />
-      <ellipse cx="48" cy="14" rx="6" ry="3" fill={s.leaf} transform="rotate(-25 48 14)" />
-      <circle cx="22" cy="42" r="14" fill={s.redDark} />
-      <circle cx="22" cy="42" r="11" fill={s.red} />
-      <ellipse cx="18" cy="38" rx="4" ry="4" fill={s.hi} opacity={0.55} />
-      <path d="M22,28 Q24,22 26,21" stroke={s.stem} strokeWidth="2" strokeLinecap="round" fill="none" />
+      <ellipse cx="30" cy="57" rx="22" ry="2.5" fill="rgba(0,0,0,0.18)" />
+      <circle cx="43.5" cy="24" r="11.2" fill={s.greenDark} />
+      <circle cx="43.5" cy="24" r="8.9" fill={s.green} />
+      <ellipse cx="40.2" cy="20.6" rx="3" ry="2.8" fill="#fff" opacity={0.4} />
+      <path d="M22,10.5 Q24.4,8 26.4,7.4" stroke={s.stem} strokeWidth="2.8" strokeLinecap="round" fill="none" />
+      <ellipse cx="32.5" cy="8.4" rx="7.4" ry="3.8" fill={s.leaf} transform="rotate(14 32.5 8.4)" />
+      <circle cx="22" cy="24" r="14" fill={s.redDark} />
+      <circle cx="22" cy="24" r="11.4" fill={s.red} />
+      <ellipse cx="17.4" cy="19.4" rx="4" ry="3.6" fill={s.hi} opacity={0.8} />
+      <polygon points="6,32 54,32 49,55 11,55" fill={s.basket} />
+      <path d="M8,40 L52,40 M9.6,47.6 L50.4,47.6" stroke={s.basketDark} strokeWidth="2" opacity={0.75} />
+      <path d="M20,32 L18.4,55 M30,32 L30,55 M40,32 L41.6,55" stroke={s.basketDark} strokeWidth="1.8" opacity={0.55} />
+      <rect x="3" y="27.5" width="54" height="6.5" rx="3.2" fill={s.basketDark} />
+      <rect x="3" y="27.5" width="54" height="2.2" rx="1.1" fill={s.basket} opacity={0.7} />
     </svg>
   )
 }
@@ -521,18 +786,18 @@ export const ParcelsCargo: FC<TrainIcon> = ({ size = 56, t }) => {
   const s = (t ?? SKY).parcels as SkyTheme['parcels']
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="30" cy="56" rx="22" ry="2.5" fill="rgba(0,0,0,0.18)" />
-      <polygon points="8,18 22,10 56,10 44,18" fill={s.top} />
-      <polygon points="44,18 56,10 56,46 44,54" fill={s.side} />
-      <rect x="8" y="18" width="36" height="36" rx="2" fill={s.front} />
-      <rect x="8" y="18" width="36" height="6" fill={s.top} opacity={0.35} />
-      <rect x="13" y="26" width="20" height="14" rx="2" fill={s.label} />
-      <line x1="15" y1="31" x2="31" y2="31" stroke={s.side} strokeWidth="1.4" />
-      <line x1="15" y1="35" x2="27" y2="35" stroke={s.side} strokeWidth="1.4" />
-      <line x1="26" y1="18" x2="26" y2="54" stroke={s.twine} strokeWidth="2.5" />
-      <line x1="8" y1="36" x2="44" y2="36" stroke={s.twine} strokeWidth="2.5" />
-      <line x1="44" y1="36" x2="56" y2="28" stroke={s.twine} strokeWidth="2.5" />
-      <line x1="26" y1="18" x2="40" y2="12" stroke={s.twine} strokeWidth="2.5" />
+      <ellipse cx="30" cy="57" rx="22" ry="2.5" fill="rgba(0,0,0,0.18)" />
+      <ellipse cx="20.5" cy="12" rx="9.4" ry="6.4" fill={s.ribbon} transform="rotate(-18 20.5 12)" />
+      <ellipse cx="39.5" cy="12" rx="9.4" ry="6.4" fill={s.ribbon} transform="rotate(18 39.5 12)" />
+      <ellipse cx="20.5" cy="12" rx="3.8" ry="2.6" fill={s.ribbonDark} opacity={0.5} transform="rotate(-18 20.5 12)" />
+      <ellipse cx="39.5" cy="12" rx="3.8" ry="2.6" fill={s.ribbonDark} opacity={0.5} transform="rotate(18 39.5 12)" />
+      <rect x="3" y="18" width="54" height="11" rx="2" fill={s.box} />
+      <rect x="3" y="18" width="54" height="3.6" rx="1.8" fill={s.boxHi} />
+      <rect x="7" y="29" width="46" height="25" rx="2" fill={s.box} />
+      <rect x="45" y="29" width="8" height="25" fill={s.boxDark} opacity={0.45} />
+      <rect x="24.8" y="18" width="10.4" height="36" fill={s.ribbon} />
+      <rect x="24.8" y="18" width="3" height="36" fill={s.ribbonDark} opacity={0.35} />
+      <circle cx="30" cy="14.5" r="5" fill={s.ribbonDark} />
     </svg>
   )
 }

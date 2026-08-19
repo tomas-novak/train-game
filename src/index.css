@@ -35,19 +35,1380 @@
   100% { transform: scale(1) rotate(0); opacity: 1; }
 }
 
+/* --- palette touch feedback -------------------------------------------------
+   Every class here is applied imperatively (remove -> reflow -> add) so its very
+   first animation frame lands in the same frame as the event that caused it.
+
+   They divide into two kinds, and the split is the whole point:
+
+     .card-squash                 fires on EVERY press, immediately, as big an
+                                  event as the refusal but in neutral grey only —
+                                  it can only mean "you have hold of this".
+     .card-accept                 fires at the one moment the item is genuinely on
+                                  the train, and means only that: a coupling. It is
+                                  hue-free too, because whether the *train* is right
+                                  is a question only the go button answers.
+     .card-refuse                 fires at the one moment the game will not take the
+                                  item, and is the only coloured verdict a card can
+                                  wear. */
+
+/* The press. Every touch that lands on a card gets this and gets it in the same
+   frame as the finger. It is deliberately HUE-FREE — no green, no red, nothing
+   that means yes or no anywhere else in this game — because press time is not
+   decision time. Two fingers landing on two different wagon cards are both legal
+   when they land, the train has not changed yet, and the second one is refused a
+   tenth of a second later when it is actually placed. An older version filled
+   both card bodies with a solid saturated green at down+15 ms and turned one red
+   at up+168 ms, so the same finger was answered yes and then no. The audio
+   channel refuses to promise anything on the way down; this is that rule in
+   pixels.
+
+   Hue-free is not the same as quiet, and the first attempt got that wrong: a 12%
+   shrink under the fingertip that was covering it changed 18.9% of the card while
+   the refusal on the same card changed 67.8%. The loudest instant event in the
+   palette belonged to "no", and a child learns which touches the game likes from
+   which touches make the screen shout. So the press is now the same size of event
+   as the refusal with none of its colour, and it is built out of three things
+   that all say "your finger has hold of this object":
+
+     1. a deep punch — scale 0.84, deeper than either the accept or the refusal —
+        with a real overshoot on the way back,
+     2. the card rising off the sheet on a neutral ink shadow (::after, grey),
+     3. the picture starting to detach upward out of the card frame — the payload
+        beginning to travel, the way Sago's animal leaves the platform on the
+        frame it is touched.
+
+   Plus a neutral slate wash over the card body (::before) so the change is the
+   whole card and not only its edges. Light slate here, dark steel at the coupling:
+   the two neutral events differ in weight and direction, and neither of them is
+   green, because green in this game now says one thing only — "the train is the
+   number it was asked for" — and no card is allowed to say it. */
+:root {
+  /* The press wash. A neutral slate with no hue of its own — deliberately darker
+     than --card-dead so a pressed card never reads as a switched-off one, and
+     never in the green/red/amber that carry meaning here. */
+  --card-press: #8f99ae;
+  /* The ink the lifted card casts. Neutral too: it is weight, not an answer. */
+  --card-press-ink: rgba(38, 44, 64, 0.5);
+}
+
+@keyframes card-squash {
+  /* Deliberately NOT scale(1) at 0%. The card is already visibly smaller and
+     already washed on the very first frame this animation is painted on, whatever
+     frame that turns out to be — measured in portrait, the frame after the class
+     was added arrived 95 ms late, and a keyframe track starting at rest would
+     have shown the child nothing at all until then. */
+  0%   { transform: translateY(1px)   scale(0.89); }
+  20%  { transform: translateY(2px)   scale(0.84); }
+  52%  { transform: translateY(-13px) scale(1.07); }
+  78%  { transform: translateY(-4px)  scale(1.01); }
+  100% { transform: translateY(0)     scale(1); }
+}
+
+/* The neutral wash. Same pre-painted overlay the accept's green fill uses, so it
+   is composited and survives a busy main thread; only the colour differs, and it
+   is set once rather than animated. */
+@keyframes card-press-wash {
+  0%   { opacity: 0.96; transform: scale(1); }
+  26%  { opacity: 0.96; transform: scale(1); }
+  64%  { opacity: 0.5;  transform: scale(1); }
+  100% { opacity: 0;    transform: scale(1); }
+}
+
+/* The ink under the rising card. A static blurred shadow, moved and faded only. */
+@keyframes card-press-shadow {
+  0%   { opacity: 0.35; transform: translateY(-3px) scale(0.96); }
+  52%  { opacity: 1;    transform: translateY(7px)  scale(0.93); }
+  100% { opacity: 0;    transform: translateY(0)    scale(1); }
+}
+
+/* The payload. The picture climbs out past the top edge of its own card — not
+   clipped, the card has no overflow — so the object, not the plate it sits on,
+   is the thing that moved. */
+@keyframes card-payload-lift {
+  0%   { transform: translateY(-10px) scale(1.03); }
+  30%  { transform: translateY(-32px) scale(1.05); }
+  60%  { transform: translateY(-46px) scale(1.06); }
+  100% { transform: translateY(0)     scale(1); }
+}
+
+.card-squash {
+  animation: card-squash 300ms cubic-bezier(0.3, 0.9, 0.3, 1);
+  /* Above its neighbours, so the lifted card and the escaping picture are drawn
+     over the row rather than behind it — but below the card that IS the answer. */
+  z-index: 3;
+  will-change: transform;
+}
+
+.palette-card.card-squash::before {
+  background-color: var(--card-press);
+  animation: card-press-wash 300ms cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+
+.palette-card.card-squash::after {
+  box-shadow: 0 16px 22px -6px var(--card-press-ink);
+  animation: card-press-shadow 300ms cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+
+/* The coupling. This is the one thing in the game we want the child to repeat, so
+   it is still the loudest event on the screen: the pressed card punches in, floods
+   with dark coupling steel, and throws a ring out past its neighbours.
+
+   What changed in round 3 is what it MEANS. It used to flood with the same
+   saturated green as the completion wash, i.e. it was a correctness verdict — and
+   for as long as the palette hid every wrong wagon type behind a dead grey plate,
+   that verdict was always true and always redundant. Handing the child back the
+   choice of wagon (the palette no longer knows which type the round wants) makes it
+   a lie again the other way round: a hopper coupling onto an apples round would be
+   flooded green and then refused by the go button. So the punch keeps every bit of
+   its size and loses its hue: dark steel, the colour of two couplings meeting. It
+   says "it went on". Nothing on a card says "you are right".
+
+   It runs at exactly the moment the coupling sound runs — when the item is
+   genuinely on the train — never at press time. A press that looked placeable on
+   the way down can still be refused on the way up, and a child who cannot read an
+   explanation must never be answered twice in two directions for one touch.
+
+   Every moving part of it is `opacity` or `transform` and nothing else. The
+   accept commits real work in the same task as the placement — a new slot on the
+   train, and cards that go grey because the train no longer wants them — and an
+   earlier version of this punch animated `background-color` and `box-shadow`,
+   which are painted by the main thread. The main thread was busy, so the whole
+   saturated punch happened while the screen was frozen and exactly one frame of
+   it was ever shown. The fill and the ring are now two pre-painted overlays that
+   the compositor can move and fade on its own. */
+@keyframes card-accept {
+  0%   { transform: scale(1); }
+  18%  { transform: scale(0.86); }
+  46%  { transform: scale(1.12); }
+  74%  { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* The flooded body. Sits over the white card and under the picture, so the card
+   turns solid steel without hiding the wagon the child just chose. */
+@keyframes card-accept-fill {
+  0%   { opacity: 0; transform: scale(0.9); }
+  10%  { opacity: 1; transform: scale(1); }
+  62%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+/* The ring. A static steel halo painted once at rest, then thrown outward by
+   transform alone — no box-shadow is ever animated. */
+@keyframes card-accept-ring {
+  0%   { opacity: 0.9; transform: scale(0.92); }
+  20%  { opacity: 0.8; transform: scale(1.02); }
+  100% { opacity: 0;   transform: scale(1.5); }
+}
+
+.card-accept {
+  animation: card-accept 380ms cubic-bezier(0.3, 0.9, 0.3, 1);
+  /* Over everything else in the row, so the ring is never clipped by a neighbour. */
+  z-index: 4;
+  will-change: transform;
+}
+
+.card-accept::before {
+  animation: card-accept-fill 380ms cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+
+.card-accept::after {
+  animation: card-accept-ring 380ms cubic-bezier(0.25, 0.8, 0.35, 1);
+}
+
+/* --- "no, THIS one" ---------------------------------------------------------
+   The third answer a press can get, and the newest: the child taps a wagon whose
+   load disagrees with the wagons already on the rails. That used to be the red
+   refusal — which on a one-wagon round meant the CORRECT card was turned red,
+   because a full train of the wrong wagons had no room left in it. So the tap is
+   taken now, the other load comes off the rails, and this is what the card says
+   while that happens.
+
+   It has to be a third thing to look at, not a variant of either neighbour:
+
+     - it keeps the coupling's dark steel fill, because something really did couple
+       on. Nothing here is green (that is the go lamp's verdict) and nothing here is
+       red (that is a refusal, and this is not one).
+     - it SWEEPS. The card is thrown sideways before it punches, and the picture
+       inside it slides in from the left as if it had pushed the old load out of the
+       way. The plain coupling is a straight vertical punch with a ring; this one
+       travels, which is the difference between "one more" and "this instead".
+     - and it never throws the coupling's ring: the ring is the badge of a wagon
+       joining a train, not of a train being started again. */
+@keyframes card-swap {
+  0%   { transform: translateX(0)     scale(1); }
+  12%  { transform: translateX(-20px) scale(0.88); }
+  38%  { transform: translateX(11px)  scale(1.10); }
+  64%  { transform: translateX(-5px)  scale(1.02); }
+  100% { transform: translateX(0)     scale(1); }
+}
+
+/* The picture arriving from the side, over the steel. */
+@keyframes card-swap-icon {
+  0%   { transform: translateX(-30px) scale(0.9); }
+  42%  { transform: translateX(7px)   scale(1.07); }
+  100% { transform: translateX(0)     scale(1); }
+}
+
+.card-swap {
+  animation: card-swap 420ms cubic-bezier(0.3, 0.9, 0.3, 1);
+  /* Over its neighbours while it sweeps across them. */
+  z-index: 4;
+  will-change: transform;
+}
+
+.card-swap::before {
+  background-color: var(--card-couple);
+  animation: card-accept-fill 420ms cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+
+.palette-card.card-swap > .card-icon {
+  animation: card-swap-icon 420ms cubic-bezier(0.3, 0.9, 0.3, 1);
+  will-change: transform;
+}
+
+/* Palette cards. Every state a card can be in is a one-shot animation class
+   applied imperatively, never a conditional className, so React can re-render a
+   card in the same tick as the press without stripping the feedback off the
+   element. Positioned, so the z-index on each feedback class orders the row. */
+:root {
+  /* Coupling steel. Dark, saturation-free, and deliberately much darker than the
+     press wash so "I have hold of it" and "it went on" are two different weights of
+     the same neutral. It is not green: green is the completion wash and the signal
+     lamp, and those answer a different question from any card. */
+  --card-couple: #3a4258;
+  /* The halo the coupling throws. Written once, because it has to be restated at a
+     higher specificity than the held press (see the block after the held rules) and
+     two copies of a literal rgba() would be two places for it to drift apart. */
+  --card-couple-halo: 0 0 0 9px rgba(58, 66, 88, 0.5);
+  /* The standing rim every card wears. Slate, not green: it answers "this is a
+     thing you may touch", which is not the same question as "is this the right
+     wagon" — and the palette is not allowed to answer the second one at all. */
+  --card-live-rim: #7884a3;
+}
+
+/* Every card, always. One resting look for the whole palette: a raised white
+   panel, a standing slate rim, the picture in full colour.
+
+   There used to be a second look — a flat desaturated plate with a greyscaled
+   picture, for a card the game would refuse — and it was measured doing real harm:
+   a fresh level-3 round painted five of six wagon cards as switched-off grey plates
+   the moment the first wagon went on, and to a four-year-old most of the screen
+   going dead reads as a broken game, not as a rule. The reference has no disabled
+   control anywhere in it; every animal on the platform can be touched, and one that
+   cannot board answers when touched. So does every card here — the refusal below is
+   immediate, coloured, audible, and points at something that does work. Nothing in
+   this palette is ever painted off, and nothing in it borrows the colour that means
+   "right". */
+.palette-card {
+  position: relative;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px var(--card-live-rim), 0 6px 14px rgba(60, 70, 110, 0.1),
+    inset 0 -3px 0 #e6e9f1;
+  /* Deliberately no background-color / box-shadow transition. Those two are
+     main-thread paint, and the card that was just pressed needs that main thread
+     to show its own punch. Flat art does not cross-fade anyway. */
+  transition: translate 150ms ease, scale 150ms ease;
+}
+
+/* The two coupling overlays, pre-painted and idle. Both are invisible and inert at
+   rest and are only ever moved by `opacity`/`transform`, so the punch is
+   composited and survives a busy main thread. */
+.palette-card::before,
+.palette-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px; /* matches rounded-2xl on the card body */
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* the solid coupling fill */
+.palette-card::before {
+  background-color: var(--card-couple);
+}
+
+/* the ring: painted once as a static spread, then thrown outward by transform */
+.palette-card::after {
+  box-shadow: var(--card-couple-halo);
+}
+
+/* The picture rides above both overlays: the card turns solid steel and the
+   wagon the child just chose is still the thing in the middle of it. */
+.palette-card > .card-icon {
+  position: relative;
+  z-index: 1;
+}
+
+/* "An engine goes here." A slow breathe on the engine cards while the train has no
+   engine — the one place in the palette where every offered card is a right answer,
+   so a whole row of them moving cannot endorse a mistake. It ends the moment an
+   engine is coupled, and the wagon cards never wear it (see the `spotlight` prop
+   in DragPalette for why). It is the inner picture that moves, so the press, refuse
+   and attention animations on the card body never have to fight it for the same
+   property. */
+@keyframes card-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.075); }
+}
+
+.palette-card[data-spotlight='true'] .card-icon {
+  animation: card-breathe 2200ms ease-in-out infinite;
+}
+
+@media (hover: hover) {
+  .palette-card:hover {
+    translate: 0 -4px;
+  }
+}
+
+/* The pressed card's picture, climbing out of the card. Declared after the
+   spotlight breathe on purpose: both animate the same element's transform, and
+   the press has to win for as long as it lasts. Slightly shorter than the card
+   body's 300 ms so the body's own animationend (which is what clears the feedback
+   class) never cuts this one off mid-flight. */
+.palette-card.card-squash > .card-icon {
+  animation: card-payload-lift 280ms cubic-bezier(0.3, 0.9, 0.3, 1);
+  will-change: transform;
+}
+
+/* --- the held press --------------------------------------------------------
+   A press is a STATE, not an animation. The punch above is a 300 ms one-shot, and
+   while it was the only thing a press produced there was a measured 215 ms window
+   (down+374 to down+589) in which a card with a finger still on it was
+   pixel-identical to a card nobody had touched: the punch had finished and the
+   ghost that HOLD_LIFT_MS puts in the hand had not arrived. A four-year-old who
+   presses and holds — the same child who taps in the wrong place — watched the
+   card he was touching go back to exactly how it looked before he touched it, and
+   that is the reaction the player model says gets read as "broken".
+
+   So `card-held` is added on pointerdown and removed only on the pointerup or
+   pointercancel that ends the session. It parks the three things the punch says at
+   their held values: the card depressed, the neutral slate wash on, the neutral
+   ink shadow under it and the picture standing lifted out of the frame. Still
+   hue-free — a held finger has not been answered yes any more than a landing one
+   has, so no green fill and no green ring here either.
+
+   Every value below is exactly the 100% frame of the matching `-hold` keyframe
+   track further down, so when the entry punch finishes (and the card body's
+   animationend clears `card-squash`) nothing moves: the animation hands the card
+   over to the state with no jump and no gap. */
+.palette-card.card-held {
+  transform: translateY(2px) scale(0.9);
+  /* Above its neighbours for as long as the finger owns it — the lifted picture
+     and the ink shadow are drawn over the row, not behind it. */
+  z-index: 3;
+  will-change: transform;
+}
+
+/* the neutral slate wash, held on */
+.palette-card.card-held::before {
+  background-color: var(--card-press);
+  opacity: 0.9;
+}
+
+/* the neutral ink the depressed card casts, held on */
+.palette-card.card-held::after {
+  box-shadow: 0 16px 22px -6px var(--card-press-ink);
+  opacity: 0.85;
+  transform: translateY(6px) scale(0.94);
+}
+
+/* The payload, held out of the card frame. Declared after the spotlight breathe
+   AND after the press's own lift so it wins both: while a finger owns this card
+   the picture stands still, out of the plate, in the child's hand's direction. */
+.palette-card.card-held > .card-icon {
+  animation: none;
+  transform: translateY(-16px) scale(1.04);
+}
+
+/* The entry punch for a press that is a held state: it drives down harder than
+   the resting held look and then settles ONTO it (`forwards`, 100% == the static
+   values above) instead of rebounding back to rest. The rebound belongs to the
+   release, and the release now always has an answer of its own to play. */
+@keyframes card-squash-hold {
+  0%   { transform: translateY(1px) scale(0.89); }
+  45%  { transform: translateY(3px) scale(0.83); }
+  100% { transform: translateY(2px) scale(0.90); }
+}
+
+@keyframes card-press-wash-hold {
+  0%   { opacity: 0.96; }
+  100% { opacity: 0.90; }
+}
+
+@keyframes card-press-shadow-hold {
+  0%   { opacity: 0.35; transform: translateY(-3px) scale(0.96); }
+  100% { opacity: 0.85; transform: translateY(6px)  scale(0.94); }
+}
+
+@keyframes card-payload-lift-hold {
+  0%   { transform: translateY(-10px) scale(1.03); }
+  55%  { transform: translateY(-26px) scale(1.06); }
+  100% { transform: translateY(-16px) scale(1.04); }
+}
+
+.palette-card.card-squash.card-held {
+  animation: card-squash-hold 220ms cubic-bezier(0.3, 0.9, 0.3, 1) forwards;
+}
+
+.palette-card.card-squash.card-held::before {
+  background-color: var(--card-press);
+  animation: card-press-wash-hold 220ms cubic-bezier(0.3, 0.9, 0.3, 1) forwards;
+}
+
+.palette-card.card-squash.card-held::after {
+  box-shadow: 0 16px 22px -6px var(--card-press-ink);
+  animation: card-press-shadow-hold 220ms cubic-bezier(0.3, 0.9, 0.3, 1) forwards;
+}
+
+.palette-card.card-squash.card-held > .card-icon {
+  animation: card-payload-lift-hold 220ms cubic-bezier(0.3, 0.9, 0.3, 1) forwards;
+  will-change: transform;
+}
+
+/* --- the coupling outranks the held press ----------------------------------
+   The one place in the game where the child is told "it went on", and it has to be
+   able to say it over a finger that is still resting on the card.
+
+   `card-held` comes off on the LAST release, not the first, which is correct: a
+   second finger on the card still owns it. But the accept fires on the release
+   that actually placed the item, so `card-held card-accept` is a real, measured
+   class list — two fingers on one wagon card, first finger up — and the accept's
+   own rules declare no colour of their own. `.card-accept::before` is
+   specificity 0-1-1 and animates opacity only, while
+   `.palette-card.card-held::before` is 0-2-1 and sets `background-color:
+   var(--card-press)`; the held slate therefore won, and for the whole 380 ms of
+   the coupling the card stayed at the lighter press-grey while the clunk sounded.
+   Measured before this block: 22 consecutive frames of rgb(143, 153, 174) with
+   `card-accept` on the element, and the halo in press-ink.
+
+   So the coupling restates both of its tones at a specificity that beats every held
+   rule (and, being declared after them, wins ties too). Scoped to the coupling, so a
+   press that is only a press stays at the lighter wash. */
+.palette-card.card-held.card-accept::before,
+.palette-card.card-squash.card-held.card-accept::before {
+  background-color: var(--card-couple);
+  animation: card-accept-fill 380ms cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+
+.palette-card.card-held.card-accept::after,
+.palette-card.card-squash.card-held.card-accept::after {
+  box-shadow: var(--card-couple-halo);
+  animation: card-accept-ring 380ms cubic-bezier(0.25, 0.8, 0.35, 1);
+}
+
+/* The punch itself, for the same reason: `.card-accept` is 0-1-0 and
+   `.palette-card.card-squash.card-held` is 0-3-0, so a card that still has a
+   finger on it would keep the held entry animation and swallow the coupling's
+   scale. The flood needs its body to punch with it. */
+.palette-card.card-held.card-accept,
+.palette-card.card-squash.card-held.card-accept {
+  animation: card-accept 380ms cubic-bezier(0.3, 0.9, 0.3, 1);
+  z-index: 4;
+}
+
+/* The swap has to outrank the held press for exactly the same reason the coupling
+   does, and it is measured the same way: `.palette-card.card-held::before` is 0-2-1
+   and paints the lighter press slate, so a card with a finger still on it would
+   sweep in press-grey instead of coupling steel, and `.palette-card.card-squash
+   .card-held` is 0-3-0, which would swallow the sweep itself. Both restated here at
+   a specificity that wins. */
+.palette-card.card-held.card-swap::before,
+.palette-card.card-squash.card-held.card-swap::before {
+  background-color: var(--card-couple);
+  animation: card-accept-fill 420ms cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+
+.palette-card.card-held.card-swap,
+.palette-card.card-squash.card-held.card-swap {
+  animation: card-swap 420ms cubic-bezier(0.3, 0.9, 0.3, 1);
+  z-index: 4;
+}
+
+.palette-card.card-held.card-swap > .card-icon,
+.palette-card.card-squash.card-held.card-swap > .card-icon {
+  animation: card-swap-icon 420ms cubic-bezier(0.3, 0.9, 0.3, 1);
+  transform: none;
+}
+
+/* The refusal. It runs on the card body itself, so the colour lands on the thing
+   the finger pressed rather than on a ring around an invisible inner box, and it
+   holds opacity 1 for its whole length — the answer the child gets most often is
+   not allowed to be the faintest thing on screen.
+
+   It shrinks while it shakes. In this game's colour language a bright card that
+   also grows is an invitation (see .attn-yes below), so "no" has to move the
+   opposite way from "yes" or the loudest object on screen is the wrong one. */
+@keyframes card-refuse {
+  0%   { opacity: 1; scale: 1;    translate: 0;     background-color: #ffffff; }
+  8%   { opacity: 1; scale: 0.91; translate: -16px; background-color: #d9534f; }
+  26%  { opacity: 1; scale: 0.90; translate: 16px;  background-color: #d9534f; }
+  44%  { opacity: 1; scale: 0.90; translate: -12px; background-color: #d9534f; }
+  62%  { opacity: 1; scale: 0.91; translate: 12px;  background-color: #e07470; }
+  80%  { opacity: 1; scale: 0.95; translate: -6px;  background-color: #e9a09d; }
+  100% { opacity: 1; scale: 1;    translate: 0;     background-color: #ffffff; }
+}
+
+.card-refuse {
+  animation: card-refuse 520ms ease-in-out;
+  /* Solid-coloured for half a second, so it sits above its neighbours' shadows
+     instead of being tinted by them — but below the card that IS the answer. */
+  z-index: 2;
+}
+
+/* The picture is never greyed, here least of all: the child has to see *which*
+   wagon was refused, and it is the same full-colour wagon it was a frame ago. The
+   red is on the card body, which is the thing his finger is on. */
+
+/* "This one instead." The other half of every refusal, played in the same frame
+   on the card that is legal right now — on a DIFFERENT card from the one the
+   finger touched.
+
+   It used to fill that card with the same solid green and grow it 1.12, which is
+   letter-for-letter what the coupling does to the card that WAS touched. Frozen at
+   any single moment the two were the same picture, so "it went on" and "try this
+   one instead" were the same signal in a game whose player cannot read a word of
+   explanation. The filled body now belongs to the coupling alone.
+   This one keeps its white body and answers with three other things instead:
+   an amber ring (its own hue), a nodding motion instead of a punch, and a
+   deliberately small scale that never reaches the coupling's 1.12. Its sound is
+   different too — two rising taps, not the coupling clunk. */
+@keyframes attn-point {
+  0%   { translate: 0 0;     scale: 1;    background-color: #ffffff; }
+  16%  { translate: 0 -22px; scale: 1.04; background-color: #ffffff; }
+  36%  { translate: 0 0;     scale: 1;    background-color: #ffffff; }
+  56%  { translate: 0 -14px; scale: 1.03; background-color: #ffffff; }
+  76%  { translate: 0 0;     scale: 1;    background-color: #ffffff; }
+  100% { translate: 0 0;     scale: 1;    background-color: #ffffff; }
+}
+
+/* The amber ring. Same trick as the accept's ring: painted once as a static
+   spread and then only ever moved by transform/opacity, so it survives a busy
+   main thread. Amber, not green — hue alone tells the two rings apart. */
+@keyframes attn-ring {
+  0%   { opacity: 0;    transform: scale(0.88); }
+  14%  { opacity: 1;    transform: scale(1.03); }
+  60%  { opacity: 0.85; transform: scale(1.12); }
+  100% { opacity: 0;    transform: scale(1.32); }
+}
+
+.attn-yes {
+  animation: attn-point 620ms cubic-bezier(0.3, 0.8, 0.3, 1);
+  /* Above the refused card: the answer is never allowed to be the thing behind. */
+  z-index: 3;
+}
+
+/* The ::before fill stays at opacity 0 here on purpose. A flooded card body means
+   exactly one thing in this game: the card you touched went onto the train. */
+.attn-yes::after {
+  box-shadow: 0 0 0 10px rgba(247, 158, 45, 0.9);
+  animation: attn-ring 620ms cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+
+/* --- the go button ----------------------------------------------------------
+   The one primary action on the screen, and the child cannot read a word, so it
+   is a picture and nothing else.
+
+   Measured off the reference title screen: a single solid disc about 19% of the
+   frame height, a hard white ring around it, a big white play triangle inside,
+   and that colour used for nothing else anywhere in the frame. Ours had been a
+   green pill — and green was then the accept punch, the standing rim on every
+   legal card and the lamp on the signal too — so the primary action owned no
+   colour at all. It now owns this hot pink, and the pink is spent only while
+   pressing the button is actually the thing to do.
+
+   Flat on purpose: one fill, one ring, no gradient, no bevel, no drop shadow,
+   because the reference art has none of those anywhere. */
+:root {
+  /* The primary action, and the only place this hue appears in the app. */
+  --go-pink: #f558ab;
+  /* Nothing to send at all: a flat slate plate. The only switched-off-looking
+     object left in the game, and it earns it — there is genuinely nothing on the
+     rails to send, which is a fact and not a verdict on anything the child chose. */
+  --go-dead: #c2cad9;
+  /* The disc once the train has left: the same hue, spent. Pale pink, never
+     grey — "gone" and "switched off" must never share a colour. */
+  --go-spent: #fbd3e8;
+  /* The pink disc itself: ~19% of the short side of a tablet, floored well above
+     the 64 px touch rule — and never bigger than the room the column actually has
+     left for it.
+     --------------------------------------------------------------------------
+     That last clause is the whole of the landscape fix. 19svh is a wish, not a
+     budget: at 1024x768 it asks for a 146 px disc, and the four rows above the
+     button (task panel, palette, rails) had already spent more of the 768 px than
+     that left, so the disc plus its ring plus the room its attention pop needs
+     ran 53 px past the bottom edge of the screen. Measured before: `.go-btn` at
+     619/794 against innerHeight 768, document scrollHeight 821 — the bottom of
+     the one control the child must reach was off-screen, and the page scrolled
+     under his finger to prove it.
+
+     `--go-headroom` is what the column spends above the button in the tallest
+     round it can draw, minus the overlap the button is pulled up by. At tablet
+     size that is: 187 px of task row (a two-row dot block, i.e. any count above
+     five) + 250 px of palette (two rows of 106 px cards, their gaps and the
+     divider) + 200 px of rails - 40 px of overlap = 597, and 604 is that with
+     seven px of slack. Whatever is left over goes to the palette, which is the
+     one flexible row, so it is never wasted.
+
+     Divisor: the hit box is 1.2027x the disc (ring both sides, times the 1.07
+     swell — see --go-hit) and the wrapper reserves another 0.12 of the hit box
+     below it for the pop (see --go-pop-room), so a disc of D costs
+     D * 1.2027 * 1.12 = D * 1.347 of column height.
+
+     Portrait is untouched by this term: at 768x1024 the budget works out at
+     312 px, far above the 19svh it already used, so `min()` still picks 19svh
+     and the portrait disc is the same 195 px it was. The check is
+     `probe.js` plus the go-button rect at counts 1, 2, 7 and 10 in both
+     orientations. */
+  --go-headroom: 604px;
+  --go-size: clamp(96px, min(19svh, 26vw, (100svh - var(--go-headroom)) / 1.347), 200px);
+  --go-ring: calc(var(--go-size) * 0.062);
+  /* The hit box, and it is deliberately bigger than the disc. A four-year-old
+     aims at the middle of what he sees but clips the edge constantly, so the
+     button must answer everywhere it is *painted*, not everywhere it is laid
+     out. Painted extent = disc plus its white ring on both sides, the whole lot
+     multiplied by the largest scale any of the disc's own animations reach —
+     1.07, the departure swell (the resting breathe is 1.055). The ring is inside
+     the multiplication, not added after it: a box-shadow spread is scaled by the
+     element's transform like everything else, and treating it as a fixed
+     addition leaves a fraction of a millimetre of dead rim at the swell's peak.
+     Every whole-button transform — press, refusal, attention pop — scales this
+     box and the paint inside it together, so the two can never come apart. */
+  --go-hit: calc((var(--go-size) + var(--go-ring) * 2) * 1.07);
+  /* Room the attention pop needs to grow into, below the button's own box.
+     Two things reach past the rim and this has to clear the deeper of them:
+       - the pop scales the hit box to 1.18, pushing its bottom rim down by
+         0.09 of the box;
+       - the ring thrown off the disc (`.go-btn::after`) is widest at the end of
+         its 700 ms, where it is also transparent. At the last offset it still
+         carries ink at (0.5 disc + its own 0.045 spread) x ~1.28, which is
+         0.098 of the hit box past the rim.
+     So 0.12 clears both with a couple of px to spare, and it is 0.12 rather
+     than the old 0.15 because in landscape those three px of padding are three
+     px the disc itself could be using.
+
+     Measured, by sampling every painted extent per frame while the pop runs, in
+     all four resting states and at counts 1, 2, 7 and 10 in both orientations:
+     the deepest painted pixel is always the ::after ring's last, near-transparent
+     moment, at y=764.4 of a 768 px landscape viewport (3.6 px of headroom) and
+     y=1018.7 of a 1024 px portrait one (5.3 px). The layout box itself ends at
+     750.4 / 995.9. Nothing about the pop makes the document scrollable at any
+     count in either orientation: scrollHeight stays equal to clientHeight. */
+  --go-pop-room: calc(var(--go-hit) * 0.12);
+}
+
+.go-btn {
+  position: relative;
+  width: var(--go-hit);
+  height: var(--go-hit);
+  border: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  /* The press, the refusal and the attention pop are transforms on this
+     element; the resting breathe is a transform on the disc inside it. Two
+     elements, so no two animations ever write the same property. */
+  will-change: transform;
+}
+
+/* The disc itself: the pink circle the child actually sees and aims at. It is
+   inset inside the hit box by exactly the room its own breathing and its white
+   ring need, so no painted pixel of it ever falls outside the target. The hit
+   box stays the full size in every state, so a state that looks smaller is not
+   also harder to hit. */
+.go-disc {
+  width: var(--go-size);
+  height: var(--go-size);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--go-pink);
+  /* The white ring, painted once and never animated. */
+  box-shadow: 0 0 0 var(--go-ring) #ffffff;
+}
+
+/* Nudged right by a hair. A triangle pointing right has its weight behind the
+   tip, so geometric centring reads as slightly-too-far-left; the reference art
+   sits its triangle off-centre the same way. */
+.go-arrow {
+  display: block;
+  width: 52%;
+  height: 52%;
+  transform: translateX(4%);
+}
+
+/* Ready: the train on the rails is exactly the train this button will accept, so
+   sending it is the thing to do. Full-size hot pink, white ring, and it breathes —
+   the same slow "this is the one" motion the palette uses, at the size of the whole
+   button.
+   The invitation comes on off the same boolean that turns the signal lamp green, so
+   the two can never disagree, and it is the honest kind of invitation: pressing it
+   really does send the train. */
+@keyframes go-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.055); }
+}
+
+/* ...and the arrow creeps forward inside it, which is the difference between a
+   button and a train leaving. */
+@keyframes go-creep {
+  0%, 100% { transform: translateX(4%); }
+  50%      { transform: translateX(12%); }
+}
+
+.go-btn[data-go='ready'] .go-disc {
+  animation: go-breathe 2400ms ease-in-out infinite;
+}
+
+.go-btn[data-go='ready'] .go-arrow {
+  animation: go-creep 2400ms ease-in-out infinite;
+}
+
+/* Built, but not the train that was asked for. Neither of the other two resting
+   states, and it must not be mistaken for either.
+
+   It keeps the hot pink, because it is still the object to press and it still owns
+   the one hue nothing else on the screen uses — and because a coloured, present
+   control is the only kind this game is allowed to show. Two things it does not
+   get, and both of them are paint rather than motion, so they survive a single
+   frozen frame:
+
+     - no white ring. The ring is the badge of a train that will actually go, and
+       it is now painted only in `ready` (and kept through `busy`, which *was*
+       ready a moment ago). Its 9 px collar plus the 1.055 breathe is a ~46 px
+       jump in painted diameter at tablet size, not a hue nobody can name.
+     - the disc holds at 0.80. Ready paints 164 px across at this size, built
+       paints 117 px: 51% of the area. A previous round used 0.92 and no ring
+       difference, and a critic measured the two states as the same picture —
+       mean rgb(246,150,202) against rgb(247,132,193) — which made the commit
+       control shout "press me" all round, at one wagon of eight as loudly as at
+       the right train. It no longer can.
+
+   It still does not invite in motion either: no breathe, no arrow creep. And it
+   stays fully pressable at the full hit box, because pressing it is how the game
+   says no — the refusal is the answer, not a dead control.
+
+   Nothing green appears anywhere while the train is in this state: the signal is
+   red, the counter has no plate, and the ground never washed. Those three and this
+   button all read off one boolean, so the screen says one thing at a time. */
+.go-btn[data-go='built'] .go-disc {
+  box-shadow: none;
+  transform: scale(0.8);
+}
+
+/* Pointless: there is no train to send (nothing on the rails, or an engine with
+   no wagons, or wagons with no engine). Four things change at once, none of them
+   a word: the pink is gone, the disc shrinks well inside its own hit area, the
+   ring is gone, and it stops moving. */
+.go-btn[data-go='idle'] .go-disc {
+  background: var(--go-dead);
+  box-shadow: none;
+  transform: scale(0.76);
+}
+
+.go-btn[data-go='idle'] .go-arrow {
+  opacity: 0.6;
+}
+
+/* Departing. This state used to share every rule with `idle`, which meant the
+   reward for getting the train right was the primary action collapsing into the
+   exact grey plate that means "there is nothing here to send" — the child was
+   told the opposite of what had just happened.
+
+   Now the departure is a departure. The disc keeps its pink and its white ring,
+   swells once as the train takes up the slack, and only then drains to the pale
+   spent pink; the arrow pulls back a hair and then shoots out of the disc
+   entirely and off to the right, following the train. Nothing here goes grey and
+   nothing here shrinks into its own hit box. */
+@keyframes go-gone {
+  0%   { background-color: var(--go-pink);  transform: scale(1); }
+  18%  { background-color: var(--go-pink);  transform: scale(1.07); }
+  46%  { background-color: var(--go-pink);  transform: scale(1.02); }
+  100% { background-color: var(--go-spent); transform: scale(0.96); }
+}
+
+/* Only the fill and a transform move. The ring is declared once and left alone,
+   because this fires in the same commit as the departure render and the main
+   thread has better things to do than repaint a shadow spread. */
+.go-btn[data-go='busy'] .go-disc {
+  background: var(--go-spent);
+  box-shadow: 0 0 0 var(--go-ring) #ffffff;
+  animation: go-gone 660ms cubic-bezier(0.3, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes go-fly {
+  0%   { transform: translateX(4%);   opacity: 1; }
+  22%  { transform: translateX(-9%);  opacity: 1; }
+  100% { transform: translateX(215%); opacity: 0; }
+}
+
+.go-btn[data-go='busy'] .go-arrow {
+  animation: go-fly 660ms cubic-bezier(0.35, 0.05, 0.6, 1) forwards;
+}
+
+/* The press. Started imperatively inside the pointerdown handler, so the first
+   animated frame is the frame of the touch — the whistle is fired in that same
+   task, one line later. */
+@keyframes go-press {
+  0%   { transform: scale(1); }
+  16%  { transform: scale(0.87); }
+  46%  { transform: scale(1.11); }
+  74%  { transform: scale(0.99); }
+  100% { transform: scale(1); }
+}
+
+.go-press {
+  animation: go-press 380ms cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+
+/* A press on the pointless disc. It must never be silent and it must never look
+   like the departure, so it moves the opposite way from every "yes" in the game:
+   it shrinks and shivers in place instead of punching outward, and the palette
+   bounces in the same frame because the cards are the only thing that can help. */
+@keyframes go-nope {
+  0%   { transform: translateX(0)     scale(1); }
+  14%  { transform: translateX(-13px) scale(0.94); }
+  34%  { transform: translateX(13px)  scale(0.94); }
+  54%  { transform: translateX(-8px)  scale(0.96); }
+  76%  { transform: translateX(5px)   scale(0.99); }
+  100% { transform: translateX(0)     scale(1); }
+}
+
+/* The disc goes a shade heavier while it shivers — a clunk that goes nowhere.
+   Deliberately not the refusal red the cards use: a red disc the size of this
+   one would read as "you broke it", and the honest message is only "there is
+   nothing here to send yet", which the palette bounce says in the same frame.
+   Animating a paint property is safe in exactly this case: a pointless press
+   changes no React state at all, so the main thread has nothing else to do. */
+@keyframes go-nope-fill {
+  0%   { background-color: var(--go-dead); }
+  18%  { background-color: #97a3bd; }
+  68%  { background-color: #97a3bd; }
+  100% { background-color: var(--go-dead); }
+}
+
+.go-nope {
+  animation: go-nope 460ms ease-in-out;
+}
+
+/* Scoped to the one state that can produce it, so that a child who presses the
+   dead disc and then immediately puts a wagon on the train gets his pink disc
+   back in that frame instead of watching a grey flash finish. */
+.go-btn[data-go='idle'].go-nope .go-disc {
+  animation: go-nope-fill 460ms ease-in-out;
+}
+
+/* A press on a train that IS built but is not the train that was asked for — the
+   `built` state above. This is neither of the other two answers and must not be
+   mistaken for either: the whistle is not blown (air brakes play instead, from the
+   same pointer task), the disc keeps its pink because pressing again is still the
+   thing to do, and the motion runs *backwards* — the whole button recoils away from
+   the direction of travel while the arrow is pulled back inside the disc. A
+   departure throws the arrow out to the right; this drags it home. */
+@keyframes go-refuse {
+  0%   { transform: translateX(0)     scale(1); }
+  12%  { transform: translateX(-17px) scale(0.95); }
+  32%  { transform: translateX(10px)  scale(0.98); }
+  52%  { transform: translateX(-10px) scale(0.97); }
+  74%  { transform: translateX(5px)   scale(0.99); }
+  100% { transform: translateX(0)     scale(1); }
+}
+
+.go-refuse {
+  animation: go-refuse 480ms ease-in-out;
+}
+
+@keyframes go-arrow-recoil {
+  0%   { transform: translateX(4%)   scale(1); }
+  20%  { transform: translateX(-24%) scale(0.84); }
+  58%  { transform: translateX(-6%)  scale(0.95); }
+  100% { transform: translateX(4%)   scale(1); }
+}
+
+/* Specificity has to beat `.go-btn[data-go='ready'] .go-arrow`, which is where
+   the resting creep-forward lives: for these 480 ms the arrow is going the other
+   way, and the two must not both be writing `transform`.
+   `built` is the state that actually produces this now; `ready` is kept because a
+   press can land in the frame before a removal has re-rendered the button. */
+.go-btn[data-go='built'].go-refuse .go-arrow,
+.go-btn[data-go='ready'].go-refuse .go-arrow {
+  animation: go-arrow-recoil 480ms cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+
+/* The train is built, so no card can help — the go button is the answer instead.
+   Scale only, plus a ring that is pre-painted at rest and then thrown outward by
+   transform and opacity: this fires during a refusal, when the main thread is
+   busy, and the old version animated box-shadow and filter, which the main
+   thread has to paint. */
+@keyframes go-attn {
+  0%   { transform: scale(1); }
+  18%  { transform: scale(1.18); }
+  42%  { transform: scale(1.04); }
+  62%  { transform: scale(1.14); }
+  82%  { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+/* The ring holds still while the button is doing its biggest scaling and only
+   opens up once the pop is settling, so the two growths never stack into an
+   extent that needs half the ground band to itself. Its widest moment is its
+   last, when the button is back at 1.0 and the ring is nearly transparent. */
+@keyframes go-ring {
+  0%   { opacity: 0.95; transform: scale(1); }
+  62%  { opacity: 0.55; transform: scale(1.06); }
+  100% { opacity: 0;    transform: scale(1.30); }
+}
+
+.go-btn::after {
+  content: '';
+  position: absolute;
+  /* Anchored to the pink disc's rim rather than the hit box's, so the ring that
+     flies off the button starts at the edge the child can see — and thinner than
+     the white rim it passes over, so the rim never disappears entirely. */
+  inset: calc((var(--go-hit) - var(--go-size)) / 2);
+  border-radius: 50%;
+  box-shadow: 0 0 0 calc(var(--go-size) * 0.045) rgba(245, 88, 171, 0.5);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.go-attn {
+  animation: go-attn 700ms cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+
+.go-attn::after {
+  animation: go-ring 700ms cubic-bezier(0.25, 0.8, 0.35, 1);
+}
+
+/* --- tap-to-place flight ----------------------------------------------------
+   The travel itself has no CSS: its distance is only known once the reserved slot
+   exists, and building that into a class meant a second React render and a forced
+   layout inside the press. It is driven by the Web Animations API in App.tsx
+   instead — transform only, so the compositor owns it. It ends at the same 1.18
+   the landing starts from, so the item arrives big and is squashed by its own
+   arrival instead of shrinking in the air and popping back to size. */
+
+/* --- the arrival -------------------------------------------------------------
+   Where the placement actually pays off. The flying copy vanishes and this runs
+   on the real item in the same commit, so the child sees one continuous thing
+   land rather than a translation that quietly stops. Three parts, all on one
+   element: the item is squashed by its own impact, a flat green disc flashes
+   behind it, and three puffs scuff out from under the wheels — Sago answers a
+   placement with steam over the train, not with silence.
+
+   `transform` on purpose, not `scale`: the button carries Tailwind's
+   `active:scale-90`, which writes the `scale` property, and the two must not
+   fight over the same declaration. */
+@keyframes item-land {
+  0%   { transform: scale(1.18) translateY(-5%); }
+  26%  { transform: scale(0.90) translateY(0); }
+  56%  { transform: scale(1.05) translateY(0); }
+  78%  { transform: scale(0.98) translateY(0); }
+  100% { transform: scale(1)    translateY(0); }
+}
+
+.item-land {
+  /* Own stacking context, so the z-index: -1 flash sits behind the icon but
+     still inside the item instead of dropping behind the ballast. */
+  isolation: isolate;
+  animation: item-land 380ms cubic-bezier(0.3, 0.9, 0.3, 1);
+  will-change: transform;
+}
+
+/* Flat, bright, brief — and colourless. It used to be the same green as the
+   completion wash, which made every single wagon arriving on the rails a small
+   verdict; the arrival of a wagon is not a verdict, it is an arrival. White light
+   behind the wagon says "this landed here" and claims nothing about whether it was
+   the right wagon, which stays the go button's one job.
+
+   A disc, inset inside the item, and gone in a quarter second. It used to be a
+   rounded rectangle 6% *larger* than the wagon, which for 300 ms redrew the
+   palette card the child had just pressed on top of the rails — the same shape
+   in the same green, in the one place where the wagon itself is supposed to be
+   the thing that arrived. Now it never grows past the item's own silhouette, so
+   what lands is unmistakably the wagon, lit from behind. */
+@keyframes land-flash {
+  0%   { opacity: 0;    transform: scale(0.45); }
+  14%  { opacity: 0.88; transform: scale(0.92); }
+  45%  { opacity: 0.5;  transform: scale(1.06); }
+  100% { opacity: 0;    transform: scale(1.2); }
+}
+
+.item-land::before {
+  content: '';
+  position: absolute;
+  inset: -18% -14%;
+  z-index: -1;
+  /* An ellipse, not a rounded rectangle. Shape is doing real work here: a
+     22 px-radius rectangle of flat light is exactly the palette card the child just
+     pressed, and drawing that on the rails made the arrival look like the card had
+     teleported rather than like the wagon had landed. A disc of light cannot be
+     mistaken for a card. */
+  border-radius: 50%;
+  background: #ffffff;
+  animation: land-flash 260ms ease-out forwards;
+  pointer-events: none;
+}
+
+/* Dust under the wheels: one puff plus two thrown sideways by box-shadow. */
+@keyframes land-dust {
+  0%   { opacity: 0; transform: translateX(-50%) scale(0.25); }
+  16%  { opacity: 1; transform: translateX(-50%) scale(0.9); }
+  55%  { opacity: 1; transform: translateX(-50%) scale(1.35) translateY(-4px); }
+  100% { opacity: 0; transform: translateX(-50%) scale(1.85) translateY(-9px); }
+}
+
+.item-land::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 26px;
+  height: 15px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow:
+    -31px -5px 0 -1px #ffffff,
+     31px -5px 0 -1px #ffffff,
+    -55px -2px 0 -4px #ffffff,
+     55px -2px 0 -4px #ffffff;
+  animation: land-dust 400ms ease-out forwards;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* --- "choose one of these" ---------------------------------------------------
+   The other half of the one refusal that no single card may answer.
+
+   A refusal always says two things: "not that" on the card the finger touched, and
+   "here" somewhere else. Since a wagon of a different load is now always accepted,
+   the only wagon refusal left is the same type again on a train that already holds
+   the round's number of it — and if that train is not the right one, what has to
+   change is the load. Which load is the child's decision and the game must not make
+   it for him: nodding at the single nearest legal card would point either at his own
+   mistake or at the answer, and both are forbidden.
+
+   So the whole row hops, once, as one object. It says "the thing to change is in
+   here" and cannot say which card. Transform only, no hue — the greens and reds in
+   this game are verdicts, and this is a direction.
+
+   (When the train IS right the refusal pops the go button instead, and when the
+   engine is missing it nods at an engine card, which is always a right answer. Those
+   are the only two cases where the game knows a single object to point at.) */
+@keyframes row-attn {
+  0%, 100% { transform: translateY(0); }
+  22%      { transform: translateY(-17px); }
+  48%      { transform: translateY(0); }
+  70%      { transform: translateY(-8px); }
+}
+
+.row-attn {
+  animation: row-attn 560ms cubic-bezier(0.3, 0.8, 0.3, 1);
+  will-change: transform;
+}
+
+/* --- "there is still something to change" ------------------------------------
+   The same sentence as the nod above, said by the state instead of by a refusal.
+
+   A settled train that is full but wrong used to be a completely still screen:
+   measured at counts 1, 3 and 10, the only animated element in the whole document
+   was a cloud. The breathing hole on the rails cannot cover it — a full train has
+   no holes, and at count 1 the train is full at the first wagon, so it never fires
+   at all — and the row hop was only ever the second half of a refusal, which meant
+   the child had to make his mistake a second time to be shown where to look.
+
+   So while there is a load on the rails that is not yet the load asked for, the
+   wagon row moves by itself. Slow, and mostly at rest: one hop, then two and a
+   half seconds of nothing, so it reads as a patient "in here" rather than a
+   flashing sign. Transform only, and it is the ROW — no hue, no single card, so it
+   cannot say which wagon, only where the choice lives. It runs on the inner row so
+   the refusal's one-shot on the outer row still plays at full strength on top of
+   it, and it stops the instant the train becomes right. */
+@keyframes row-hint {
+  0%, 74%, 100% { transform: translateY(0); }
+  80%           { transform: translateY(-15px); }
+  88%           { transform: translateY(0); }
+  93%           { transform: translateY(-6px); }
+}
+
+.row-hint {
+  animation: row-hint 3400ms cubic-bezier(0.3, 0.8, 0.3, 1) infinite;
+  will-change: transform;
+}
+
+/* --- universal touch answer --------------------------------------------------
+   Created by direct DOM calls inside the pointerdown handler, so the disc is
+   already animating before the event finishes dispatching. */
+
+@keyframes tap-ripple {
+  0%   { transform: scale(0.25); opacity: 0.55; }
+  70%  { opacity: 0.22; }
+  100% { transform: scale(1.5);  opacity: 0; }
+}
+
+.tap-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: #ffffff;
+  animation: tap-ripple 420ms ease-out forwards;
+}
+
+/* The parent's mute switch. Pressing it may well make the game silent, so the
+   squash has to carry the whole answer on its own — started imperatively in the
+   pointerdown handler, so its first frame is the frame of the touch. */
+@keyframes mute-poke {
+  0%   { transform: scale(1); }
+  22%  { transform: scale(0.84); }
+  58%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.mute-poke {
+  animation: mute-poke 320ms cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+
+/* The task display, tapped. It is the child's "what am I supposed to do?" button:
+   it rocks once, and the sentence is read out again. */
+@keyframes task-poke {
+  0%   { transform: scale(1)    rotate(0deg); }
+  20%  { transform: scale(1.07) rotate(-1.6deg); }
+  52%  { transform: scale(0.98) rotate(1.2deg); }
+  78%  { transform: scale(1.03) rotate(-0.5deg); }
+  100% { transform: scale(1)    rotate(0deg); }
+}
+
+.task-poke {
+  animation: task-poke 420ms cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+
+/* A tap that hit nothing useful throws the eye at the cards instead. */
+@keyframes attn {
+  0%, 100% { translate: 0 0;    scale: 1; }
+  20%      { translate: 0 -14px; scale: 1.04; }
+  45%      { translate: 0 0;    scale: 1; }
+  65%      { translate: 0 -7px; scale: 1.02; }
+}
+
+.attn {
+  animation: attn 520ms cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+
+/* Tap on the rails: the faint train hops, answering "things go here". */
+@keyframes ghost-jump {
+  0%, 100% { translate: 0 0;   scale: 1; }
+  25%      { translate: 0 -9px; scale: 1.03; }
+  55%      { translate: 0 0;   scale: 1; }
+  75%      { translate: 0 -4px; scale: 1.01; }
+}
+
+.ghost-jump {
+  animation: ghost-jump 460ms cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+
+/* ── the empty slots on the rails ─────────────────────────────────────────────
+   One wagon-shaped hole per wagon the round is still missing, standing in the
+   train row at the real wagon size. The old ghost was a locomotive and exactly
+   two wagons whatever the round asked for; these are the round's own number, and
+   the child fills them.
+
+   Solid, flat, fully opaque — never semi-transparent. An early version let the
+   sleeper pattern through at half opacity and the holes dissolved into the ballast;
+   a later one drew a whole steel wagon, which was countable but so close in value
+   to a real wagon that filling a hole barely showed; and the one after that drew a
+   wagon-shaped silhouette in the darkest ink on the screen, wheels and all, which
+   made a fresh ten-wagon round read as a finished dark train. Each is now a shallow
+   bay pressed into the ballast in the ballast's own values (see `SLOT_FLOOR` in
+   TrackZone.tsx): opaque, so it cuts the sleeper stripes and can be counted, but
+   flat ground — not rolling stock — so the only wagons on the rails are the child's
+   own. */
+.train-slot {
+  opacity: 1;
+}
+
+/* The next hole to fill breathes — the same "one more, here" the leading empty
+   pip says, in the place the wagon is actually going to land. Transform only, so
+   it costs the compositor one layer and the main thread nothing.
+
+   It is now the *only* standing "next" signal in the game, and it was widened for
+   that. The palette used to breathe too, on the one wagon card still legal, which
+   after a wrong first wagon meant the only moving thing on the screen was the
+   child's mistake. This one cannot make that error: it is a hole, it has no type
+   and no hue, and it stands exactly where the next wagon will land whichever card
+   he chooses. So it says "one more, here" and never "this one". */
+@keyframes slot-wait {
+  0%, 100% { transform: scale(1)    translateY(0); }
+  50%      { transform: scale(1.09) translateY(-7px); }
+}
+
+.train-slot[data-slot-next] {
+  opacity: 1;
+  animation: slot-wait 1600ms ease-in-out infinite;
+}
+
+/* The signal going green by itself.
+   The lamp housing swells once on the frame the train first becomes right, so the
+   change is an event and not only a state the child has to happen to look at. The
+   green lamp underneath is a state and outlasts it: it stays lit for as long as the
+   train stays right, and goes back to red the instant a wagon comes off. Transform
+   only, and the class is only ever on the element while `isGo` is true, so it runs
+   once per arrival at the answer. */
+@keyframes lamp-on {
+  0%   { transform: scale(1); }
+  26%  { transform: scale(1.16); }
+  58%  { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+
+.lamp-go {
+  animation: lamp-on 460ms cubic-bezier(0.3, 0.85, 0.3, 1);
+}
+
+/* Declared after `.ghost-jump` on purpose: both write `animation` on the train
+   row, and on the frame the train is completed this one has to win.
+
+   "That is the right number of wagons." The whole train squashes once on its
+   wheels — the same language as a single wagon landing, one size up, because what
+   just finished is the whole train and not one wagon. It says nothing about
+   whether the train is *right*: the engine may still be missing, and that
+   question belongs to the go button. */
+@keyframes train-full {
+  0%   { translate: 0 0;     scale: 1; }
+  22%  { translate: 0 -10px; scale: 1.04; }
+  52%  { translate: 0 0;     scale: 0.985; }
+  76%  { translate: 0 -3px;  scale: 1.005; }
+  100% { translate: 0 0;     scale: 1; }
+}
+
+.train-full {
+  animation: train-full 520ms cubic-bezier(0.3, 0.85, 0.3, 1);
+}
+
+/* The ground washes the go lamp's green, once — on the frame the train first
+   becomes the train the button will accept, and never on a full train of the wrong
+   wagons. Flat, brief, opacity only: nothing moves, nothing relayouts, and it is
+   gone before the child could mistake it for a state. The state it announces is the
+   green lamp, which stays. */
+@keyframes track-full-wash {
+  0%   { opacity: 0; }
+  18%  { opacity: 0.34; }
+  55%  { opacity: 0.22; }
+  100% { opacity: 0; }
+}
+
+.track-full-wash {
+  animation: track-full-wash 460ms ease-out;
+}
+
+/* Progress stars: held down, they visibly drain before anything is wiped. */
+@keyframes hold-reset {
+  0%   { scale: 1;    rotate: 0deg;  box-shadow: 0 0 0 0 rgba(224, 138, 138, 0); }
+  25%  { scale: 0.94; rotate: -4deg; box-shadow: 0 0 0 6px rgba(224, 138, 138, 0.55); }
+  60%  { scale: 0.88; rotate: 4deg;  box-shadow: 0 0 0 10px rgba(224, 138, 138, 0.75); }
+  100% { scale: 0.7;  rotate: 0deg;  box-shadow: 0 0 0 14px rgba(224, 138, 138, 0.9); }
+}
+
+.hold-reset {
+  animation: hold-reset 900ms ease-in forwards;
+}
+
+/* ── the count rows ───────────────────────────────────────────────────────────
+   Two rows on the screen use these classes and they are drawn by one component:
+   the dots under the target numeral, and the live count on the ground above the
+   rails. A hole while that wagon is missing, a solid ink dot once it is standing
+   on the rails. Same wrap at five, same pitch relative to the dot, and 20 px
+   against 22 px in diameter, so the child's job reduces to making two rows of
+   dots the same shape. Flat: one colour each, no gradient, no shadow, exactly
+   like everything else in the reference. */
+.count-pip {
+  flex: none;
+  border-radius: 50%;
+  border-style: solid;
+  border-color: transparent;
+  box-sizing: border-box;
+}
+
+/* Filled pips carry no border, so the ink disc is the full diameter of the hole
+   it just closed — the row must not visibly change pitch as it fills. */
+.count-pip-full {
+  border-width: 0;
+}
+
+/* Filled, in the same commit its wagon became visible: one swell, from nothing. */
+@keyframes pip-land {
+  0%   { transform: scale(0.15); }
+  50%  { transform: scale(1.4); }
+  76%  { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+
+.pip-land {
+  animation: pip-land 420ms cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+
+/* The next hole to fill breathes. It is the whole of "one more to go", said
+   without a word, a number or an arrow. */
+@keyframes pip-wait {
+  0%, 100% { transform: scale(1);    opacity: 0.75; }
+  50%      { transform: scale(1.12); opacity: 1; }
+}
+
+.count-pip-empty[data-next] {
+  animation: pip-wait 1600ms ease-in-out infinite;
+}
+
+/* The train just became the right train. The whole row swells once, behind its
+   green plate — a single event, which the disappearance of one small outline could
+   never be. It no longer fires on the last hole closing: closing the last hole says
+   only how many wagons there are, and the dots say that by filling in. */
+@keyframes pips-done {
+  0%   { transform: scale(1); }
+  32%  { transform: scale(1.16); }
+  66%  { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+
+.count-row-done {
+  animation: pips-done 520ms cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+
 @keyframes flash {
   0% { opacity: 0; }
   30% { opacity: 0.85; }
   100% { opacity: 0; }
 }
 
+/* The screen is exactly one screen, and it never scrolls.
+   A page that scrolls at all is a page a four-year-old drags around by accident,
+   and the thing that goes off the bottom when it does is the go button. So the
+   document is pinned to the viewport in three places — html, body and #root —
+   and `overflow: hidden` here is what makes `document.scrollHeight` equal
+   `clientHeight` even if some future row asks for more room than there is: the
+   column inside then loses the bottom of its flexible row (the palette) instead
+   of pushing the primary action out of the frame. `overscroll-behavior` stops the
+   rubber-band drag that a touch on a non-scrollable page can still produce. */
+html {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 body {
   margin: 0;
   background: #e6f1fa;
-  min-height: 100svh;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
   font-family: system-ui, sans-serif;
 }
 
 #root {
-  min-height: 100svh;
+  height: 100svh;
+  overflow: hidden;
 }

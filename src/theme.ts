@@ -80,6 +80,10 @@ export const SKY = {
     door: '#a87a5a',
     doorHi: '#c89878',
     doorEdge: '#6b4530',
+    // The inside of the slid-open door. Deliberately the darkest brown in the
+    // set: a load only reads if there is an unlit doorway behind it, which is
+    // exactly how the reference lights its basket of apples.
+    opening: '#3d2418',
     wheel: '#2b3856',
   },
   flatcar: {
@@ -104,12 +108,31 @@ export const SKY = {
     log3: '#e8d0b3',
     wheel: '#2b3856',
   },
+  // ── cargo objects ──────────────────────────────────────────────────────────
+  // The wagons are pastel; the things they carry are not. In the reference every
+  // payload is a saturated, high-contrast object sitting in the opening, and it
+  // never repaints the wagon underneath. These four palettes are the ones a
+  // critic read blind at card size and could not name, so they are now built
+  // around one strong hue each: milk blue, fuel red, apple red-and-green, a
+  // present in amber and red.
   coal: { a: '#2b3856', b: '#4a5577', c: '#6b7693', hi: '#9aa3bd' },
   sand: { a: '#f5d589', b: '#d4b25c', hi: '#fce4ab', dot: '#a87f4a' },
-  milk: { bottle: '#ffffff', shadow: '#e8e6f0', cap: '#7aa6e0', label: '#4d7ab8', labelHi: '#a3c1ec' },
-  fuel: { drum: '#e08a8a', drumHi: '#eea8a8', band: '#8a4044', cap: '#7884a3', hazard: '#fff3c6' },
-  apples: { red: '#e08a8a', redDark: '#b85e60', leaf: '#7ac4a0', stem: '#6b4530', hi: '#eea8a8' },
-  parcels: { top: '#c89878', front: '#a87a5a', side: '#7d5d44', twine: '#f5a3a8', label: '#ffffff' },
+  // Milk stands on top of a near-white tank, against a white card, so every
+  // white bottle carries a navy rim and stands in a strong blue crate.
+  milk: { bottle: '#ffffff', crate: '#2f6fc4', crateHi: '#6f9bd8', rim: '#17325c', cap: '#2f6fc4' },
+  // A red jerrycan: handle, spout, X-braced panel. The old drum was a dusty rose
+  // cylinder with a cream striped band and read as a layer cake.
+  fuel: { can: '#e0483c', canHi: '#f4756a', canDark: '#a5302a', cap: '#2b3856', brace: '#a5302a' },
+  // A woven basket with one red and one green apple over the rim, straight off
+  // the reference. Saturated, because salmon circles on a brown wall vanish.
+  apples: {
+    red: '#e2453c', redDark: '#ab2f28', green: '#5fbd4f', greenDark: '#3d8c36',
+    leaf: '#4aa85a', stem: '#6b4530', hi: '#f7938a',
+    basket: '#f0cf8f', basketDark: '#c1913f',
+  },
+  // A wrapped present: amber box, red ribbon, red bow. Brown parcels in a brown
+  // doorway were a smudge.
+  parcels: { box: '#f2b134', boxHi: '#fbd383', boxDark: '#c8871f', ribbon: '#d9453c', ribbonDark: '#a5302a' },
   cars: { body: '#7aa6e0', bodyDark: '#4d7ab8', window: '#e8f1fb', wheel: '#2b3856', head: '#fff3c6' },
   people: { skinA: '#f5d589', skinB: '#d8967c', shirtA: '#f5a3a8', shirtB: '#7aa6e0', hair: '#5b3024' },
   logs: { outer: '#8a6f5a', mid: '#b89878', inner: '#d1b395', crack: '#5b3024' },
