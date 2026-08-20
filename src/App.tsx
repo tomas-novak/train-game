@@ -223,6 +223,7 @@ export default function App() {
     phase: game.phase,
     task: game.task,
     wagonCount: wagonsOn,
+    placeSeq: game.placeSeq,
     speech,
   })
   const trackHeight = isTablet ? 200 : 140

@@ -72,6 +72,8 @@ export interface GameState {
    */
   isRight: boolean
   shakeKey: number
+  /** Increments on every accepted wagon placement, replacements included. */
+  placeSeq: number
   pulseTask: boolean
   /**
    * Is the train RIGHT at this instant, read from the authoritative mirror rather
@@ -108,10 +110,17 @@ export function useGameState(): GameState {
   const [task, setTask] = useState<Task>(() =>
     generateTask(LEVELS[initialProgress.level - 1])
   )
-  const [phase, setPhase] = useState<GamePhase>('playing')
+  const [phase, setPhaseState] = useState<GamePhase>('playing')
   const [trainItems, setTrainItems] = useState<KeyedTrainItem[]>([])
   const [validation, setValidation] = useState<ValidationResult | null>(null)
   const [shakeKey, setShakeKey] = useState(0)
+  /**
+   * Bumped once for every wagon the game actually takes, replacements included.
+   * A replacement leaves the count at one, or lowers it, so anything listening for
+   * "a wagon just landed" cannot use the count alone — it would miss exactly the
+   * placements a child makes when he changes his mind.
+   */
+  const [placeSeq, setPlaceSeq] = useState(0)
   const [pulseTask, setPulseTask] = useState(false)
   const keyCounter = useRef(0)
   const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -119,6 +128,27 @@ export function useGameState(): GameState {
   // React has re-rendered. Every accept/refuse decision reads this, so two
   // taps 60 ms apart cannot both be told "yes" for the same last slot.
   const trainRef = useRef<KeyedTrainItem[]>([])
+  // Same trick for the phase. A placement decided during a pointer event must
+  // know whether the round is still open, and `phase` in the render closure can
+  // be a frame stale — which is long enough for a tap during the 1.8 s departure
+  // to rebuild an already-validated train and still collect the round.
+  const phaseRef = useRef<GamePhase>('playing')
+  /** Sets the phase and its synchronous mirror together, so they cannot drift. */
+  const setPhase = useCallback(
+    (next: GamePhase | ((p: GamePhase) => GamePhase)) => {
+      setPhaseState((p) => {
+        const resolved = typeof next === 'function' ? next(p) : next
+        phaseRef.current = resolved
+        return resolved
+      })
+    },
+    [],
+  )
+  /** Is the round open to placements at all? False while the train departs. */
+  const roundIsOpen = useCallback(
+    () => phaseRef.current === 'playing' || phaseRef.current === 'wrong',
+    [],
+  )
 
   useEffect(() => {
     return () => { if (pulseTimerRef.current !== null) clearTimeout(pulseTimerRef.current) }
@@ -164,8 +194,9 @@ export function useGameState(): GameState {
    * wagon is his; the verdict on that choice is the go button's, said once.
    */
   const canAdd = useCallback(
-    (item: TrainItem) => canAddToTrain(trainRef.current, item, maxWagons),
-    [maxWagons],
+    (item: TrainItem) =>
+      roundIsOpen() && canAddToTrain(trainRef.current, item, maxWagons),
+    [maxWagons, roundIsOpen],
   )
 
   const liveTrain = useCallback(() => trainRef.current, [])
@@ -187,6 +218,10 @@ export function useGameState(): GameState {
    */
   const addToTrain = useCallback(
     (item: TrainItem): PlaceResult | null => {
+      // The invariant lives here, not in the component: a placement after the
+      // train has left would otherwise replace a validated rake mid-departure
+      // and still be awarded the round by the phase timer.
+      if (!roundIsOpen()) return null
       const prev = trainRef.current
       const kind = trainTap(prev, item, maxWagons)
       if (kind === 'refuse') return null
@@ -201,18 +236,19 @@ export function useGameState(): GameState {
       } else {
         applyTrain([...prev, keyed])
       }
+      if (item.kind === 'wagon') setPlaceSeq((n) => n + 1)
       setPhase((p) => (p === 'wrong' ? 'playing' : p))
       setValidation(null)
       return { key: keyed._key, replaced }
     },
-    [applyTrain, maxWagons],
+    [applyTrain, maxWagons, roundIsOpen, setPhase],
   )
 
   const removeFromTrain = useCallback((key: number) => {
     applyTrain(trainRef.current.filter((t) => t._key !== key))
     setPhase((p) => (p === 'wrong' ? 'playing' : p))
     setValidation(null)
-  }, [applyTrain])
+  }, [applyTrain, setPhase])
 
   const submit = useCallback(() => {
     const loco = trainItems.find((t) => t.kind === 'loco') as
@@ -237,7 +273,7 @@ export function useGameState(): GameState {
       setPulseTask(true)
       pulseTimerRef.current = setTimeout(() => setPulseTask(false), PULSE_MS)
     }
-  }, [task, trainItems])
+  }, [task, trainItems, setPhase])
 
   const nextRound = useCallback(() => {
     const newProgress = { ...progress }
@@ -256,7 +292,7 @@ export function useGameState(): GameState {
     applyTrain([])
     setValidation(null)
     setPhase('playing')
-  }, [applyTrain, phase, progress])
+  }, [applyTrain, phase, progress, setPhase])
 
   const resetProgress = useCallback(() => {
     const p = { level: 1, correctInLevel: 0 }
@@ -266,7 +302,7 @@ export function useGameState(): GameState {
     applyTrain([])
     setValidation(null)
     setPhase('playing')
-  }, [applyTrain])
+  }, [applyTrain, setPhase])
 
   useEffect(() => {
     if (phase === 'departing') {
@@ -275,7 +311,7 @@ export function useGameState(): GameState {
       }, DEPART_MS)
       return () => clearTimeout(timer)
     }
-  }, [phase])
+  }, [phase, setPhase])
 
   useEffect(() => {
     if (phase === 'celebrating') {
@@ -334,6 +370,7 @@ export function useGameState(): GameState {
     isRight,
     isRightNow,
     shakeKey,
+    placeSeq,
     pulseTask,
     liveTrain,
     canAdd,

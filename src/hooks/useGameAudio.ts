@@ -30,6 +30,13 @@ interface Args {
   task: Task
   /** How many wagons are on the train right now. */
   wagonCount: number
+  /**
+   * Increments on every wagon the game accepts, replacements included. Counting
+   * hangs off this rather than off `wagonCount`, because a replacement leaves the
+   * count at one or lowers it — so a child who changes his mind would otherwise
+   * hear nothing at all for the wagon he just chose.
+   */
+  placeSeq: number
   speech: SpeechApi
 }
 
@@ -45,10 +52,11 @@ export interface GameAudioApi {
   speakTask: () => void
 }
 
-export function useGameAudio({ phase, task, wagonCount, speech }: Args): GameAudioApi {
+export function useGameAudio({ phase, task, wagonCount, placeSeq, speech }: Args): GameAudioApi {
   const { speak, noteGesture: unlock } = speech
   const taskRef = useRef(task)
   const prevWagonsRef = useRef(wagonCount)
+  const prevPlaceSeqRef = useRef(placeSeq)
   const prevPhaseRef = useRef<GamePhase>(phase)
   /**
    * One timer, holding at most one number: the newest one. Wagons that land
@@ -130,23 +138,31 @@ export function useGameAudio({ phase, task, wagonCount, speech }: Args): GameAud
    * count of the wrong thing.
    */
   useEffect(() => {
+    const prevSeq = prevPlaceSeqRef.current
+    prevPlaceSeqRef.current = placeSeq
     const prev = prevWagonsRef.current
     prevWagonsRef.current = wagonCount
-    // Emptied, or a wagon taken off again: any number waiting is a lie now.
-    if (wagonCount < prev || wagonCount === 0) {
+    const placed = placeSeq !== prevSeq
+    // Nothing was placed: the count only ever went down, or a wagon came off, so
+    // any number still waiting describes a train that no longer exists.
+    if (!placed) {
+      if (wagonCount !== prev || wagonCount === 0) dropPendingCounts()
+      return
+    }
+    if (wagonCount === 0) {
       dropPendingCounts()
       return
     }
-    if (wagonCount === prev) return
     // Two wagons inside one flight: the older number is dropped, not stacked.
-    // "Dva" over the second wagon is true; "jedna" over it is not.
+    // "Dva" over the second wagon is true; "jedna" over it is not. A replacement
+    // arrives here too, with the count it actually leaves behind — one.
     dropPendingCounts()
     const n = wagonCount
     countTimerRef.current = setTimeout(() => {
       countTimerRef.current = null
       speak(countPhrase(n), 'count')
     }, COUNT_DELAY_MS)
-  }, [wagonCount, speak, dropPendingCounts])
+  }, [wagonCount, placeSeq, speak, dropPendingCounts])
 
   /** The three moments that are about the whole train rather than one wagon. */
   useEffect(() => {
