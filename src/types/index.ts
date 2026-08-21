@@ -57,6 +57,18 @@ export interface Task {
   cargo: CargoDef
   /** The wagon types the palette offers this round, correct one included. */
   wagonTypeIds: WagonType[]
+  /**
+   * The wagons that stand waiting in the world this round — roadmap E2.
+   *
+   * A second, shorter list rather than a reinterpretation of the one above,
+   * because the two screens ask two different questions. Classic offers a tray of
+   * `wagonTypeIds` cards and the child builds from inventory; the world stands
+   * `CHOICE_COUNT` wagons on a siding and the child picks one of them. The level's
+   * own `wagonChoices` therefore cannot serve both — level 1 offers two cards and
+   * level 3 offers six — so the world's list is generated to its own fixed length
+   * from the same level pool, and the classic list is untouched to the entry.
+   */
+  choiceTypeIds: WagonType[]
   /** The engines the palette offers this round. */
   locomotiveIds: string[]
   /** Whether this round's wagons are drawn carrying their load. */

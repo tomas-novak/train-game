@@ -7,11 +7,16 @@ import { CORRECT_PER_LEVEL } from './data/levels'
 import { TaskHero } from './components/TaskHero'
 import { HelpModal } from './components/HelpModal'
 import { DragPalette } from './components/DragPalette'
+import { WorldChoice } from './components/WorldChoice'
 import { TrackZone } from './components/TrackZone'
 import { Celebration } from './components/Celebration'
 import { MuteButton } from './components/MuteButton'
 import { Scene } from './components/Scene'
-import { SKY } from './theme'
+import { WorldScene } from './components/WorldScene'
+import { WorldCheer } from './components/WorldCheer'
+import { CHOICE_COUNT } from './data/world'
+import { readMode } from './utils/mode'
+import { SKY, WORLD } from './theme'
 import { showTapRipple } from './utils/tapRipple'
 import { playBrake, playOops, playTick, playUnmute, playWhistle } from './utils/sfx'
 import { placedLoco, placedWagons } from './utils/train'
@@ -22,6 +27,36 @@ import type { PalettePressPayload } from './components/DragPalette'
 import type { FC } from 'react'
 
 const t = SKY
+/**
+ * Which of the two screens this session is. Read once, at module load, from the
+ * URL — see `utils/mode.ts`. `?mode=classic` is the finished section-A screen,
+ * unchanged; anything else (including no parameter at all) is the section-E
+ * world. Both are reachable from one preview URL on one tablet, which is what
+ * makes the A/B test possible.
+ */
+const MODE = readMode()
+const isWorld = MODE === 'world'
+/**
+ * The mode, on the root element, so CSS can see it.
+ *
+ * The rules that need it are the `html[data-mode='world'] .world-plate` /
+ * `.world-badge` pair in index.css: the task panel, the help button and the mute
+ * switch are painted as flat signs standing in a place rather than as shadowed
+ * cards floating over one. Set here, at module load, because the mode is read here
+ * and because it has to be on the element before the first paint. Classic never
+ * sets it, so every selector guarded by it is dead on the control screen.
+ */
+if (isWorld) document.documentElement.dataset.mode = 'world'
+/**
+ * What the two rows the scene does not own are filled with.
+ *
+ * Classic fills the page behind the column, and the row the go button stands in,
+ * with its own pale sky — which is why the button reads as a thing in a strip
+ * below the rails. In world mode both are transparent, so the scene's near bank
+ * runs unbroken under the button and the button is standing on the ground.
+ */
+const PAGE_BG = isWorld ? WORLD.sky : t.skyBot
+const GO_ROW_BG = isWorld ? 'transparent' : t.skyBot
 const RESET_FLASH_MS = 400
 /** Wiping progress needs a deliberate hold, not a stray tap on the stars. */
 const RESET_HOLD_MS = 900
@@ -160,6 +195,19 @@ interface Flight {
    * the train.
    */
   mode: 'place' | 'snap' | 'shed'
+  /**
+   * How much the copy grows on the way — world placements only, 1 everywhere else.
+   *
+   * The waiting stock stands at the far end of the line and is therefore drawn
+   * smaller than the coupled stock (see `OFFER_SCALE` in data/world.ts). The copy
+   * starts pixel-identical to the wagon that was standing there — same drawing,
+   * same size, same place — and reaches the coupled size as it arrives, so the
+   * child watches ONE wagon come towards him down the line rather than a small
+   * wagon vanishing and a big one appearing. Round 3's failed gate was a wagon
+   * that was drawn at half the size it became with nothing in between; this is
+   * the in-between.
+   */
+  grow: number
   /** The train item this flight is carrying; it stays hidden until the flight lands. */
   itemKey: number | null
 }
@@ -179,9 +227,37 @@ function releasedOnCard(cardEl: HTMLElement, x: number, y: number): boolean {
   )
 }
 
+/**
+ * The picture the whole game sits inside. One line, and it is the whole of the
+ * mode switch: `Scene` is the classic pale wash with its blurred sun and two
+ * grey-blue hills, `WorldScene` is the place behind the rails. Neither knows
+ * about the other and the classic one is not touched.
+ */
+const SceneShell = isWorld ? WorldScene : Scene
+
 export default function App() {
   const game = useGameState()
   const isTablet = useTablet()
+  /**
+   * The viewport's height in px, because world mode's track band is a fraction of
+   * it and the whole scene is anchored to that band. Read once and then on resize
+   * (which is what an orientation change is); nothing else in the app needs it, and
+   * classic never reads it.
+   */
+  /* The width comes with it, and for one reason only: a tall frame and a wide one
+     want different shares of their height for the band the train stands in — see
+     `trackHeight`. Nothing else reads it. */
+  const [viewport, setViewport] = useState(() => ({
+    h: typeof window === 'undefined' ? 768 : window.innerHeight,
+    w: typeof window === 'undefined' ? 1024 : window.innerWidth,
+  }))
+  useEffect(() => {
+    const onResize = () => setViewport({ h: window.innerHeight, w: window.innerWidth })
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  const viewportH = viewport.h
+  const viewportW = viewport.w
   const speech = useSpeech()
   const wagonsOn = placedWagons(game.trainItems).length
   /**
@@ -197,7 +273,19 @@ export default function App() {
    * on the rails exactly as wrong as it looked in the palette.
    */
   const taskCargo = game.task.cargo
-  const cargoHints = game.task.cargoHints
+  /**
+   * Whether the wagons are drawn carrying their load.
+   *
+   * The level decides it on the classic screen and takes it away at level 3, so
+   * the mapping ends up learned. In world mode it is always on, and that is
+   * roadmap E2 rather than an oversight: this mode's whole question is "find the
+   * wagon carrying the thing the task asks for", a picture-to-picture match, and a
+   * row of three empty shells would turn it back into the abstract categorisation
+   * a four-year-old has not got. Same rule for the wagons standing on the siding
+   * and for the wagons on the rails, so the wagon that arrives is the identical
+   * drawing to the one that was tapped.
+   */
+  const cargoHints = isWorld || game.task.cargoHints
   const wagonCargo = useCallback(
     (type: WagonType): string | null =>
       cargoHints ? cargoShownOnWagon(type, taskCargo) : null,
@@ -226,7 +314,98 @@ export default function App() {
     placeSeq: game.placeSeq,
     speech,
   })
-  const trackHeight = isTablet ? 200 : 140
+  /**
+   * How tall the band the train stands in is — and in world mode it is 36 px
+   * taller than it was, because the measured whole-screen objection was that the
+   * subject of the picture was not the biggest thing in it. The train came third
+   * on chroma behind an inert bear and the dock, and its visible box was 4.5% of
+   * the frame, where every reference frame gives the rolling stock the whole lower
+   * half. Every size on the rails is a fraction of this one number — the engine,
+   * the wagons, the rails, the ties, the ballast, the signal — and so is the size
+   * a waiting wagon is drawn at, so the train grows without the waiting stock
+   * becoming a different size from the coupled stock. The room comes out of the
+   * one row that is allowed to give (the choice row's `flex-1`), never out of the
+   * go button, which clamps itself against the viewport in CSS.
+   */
+  /**
+   * How tall the band the train stands in is.
+   *
+   * World mode's grows again in E3, and this time it buys ground rather than
+   * drawings. The waiting stock used to have a row of its own above the rails —
+   * measured as the reason the frame read as two railways — and it now stands on
+   * the running line itself, so the row it vacated is gone from the column and the
+   * band takes the room — but only six px of it, and that is the measured answer
+   * rather than a shy one. The stock's size is decided by the WIDTH of the line it
+   * has to share (see `fit` in TrackZone), never by this number, so a taller band
+   * buys nothing but bare field above the rails: at 300 px it measured 180 px of
+   * empty green inside the band, which is the "flat green sheet" objection restated
+   * one row higher. What fills y=440 to y=592 now is the train itself and the stock
+   * parked at the far end of the same line, edge to edge, which is what the brief
+   * calls the preferred fix. The rest of the freed row goes to the sky, where the
+   * two ranges of hills grow into it.
+   *
+   * And it is a fraction of the VIEWPORT rather than a pair of literals, because the
+   * two orientations are not the same shape. 246 px measured right in landscape and
+   * left portrait with the horizon a third of the way up a 1024 px frame and 178 px
+   * of bare field between the station and the train. A third of the height is 253 px
+   * in landscape and 338 in portrait, which puts the rails, the horizon and the
+   * midground in the same relative place at both — and every object in the scene
+   * that is not on the horizon is now anchored to this number too (see
+   * `STATION.foot` and `HEDGE_FOOT`), so the whole midground moves with it.
+   */
+  /*
+   * ...and in E3 round 2 the two orientations stop sharing one fraction.
+   *
+   * A third of the height was measured right in landscape (253 px of a 768 px frame,
+   * the rails a third of the way up, the midground where the reference puts it) and
+   * measured wrong in portrait: the very same 33% left 384 px of the 1024 with no
+   * drawn object in it at all, "37.5% of the screen, zero ink". A tall frame does not
+   * want the same share as a wide one, because the thing the band holds is a
+   * horizontal train and the surplus above it is sky.
+   *
+   * So the band takes 0.33 of a landscape frame and 0.42 of a portrait one, which
+   * pulls the horizon 92 px up the portrait screen and — since the coupled wagon's
+   * size is now a fraction of THIS number (see `WAGON_BAND` and `wagonMax` in
+   * TrackZone) — buys the drawings the height the round-1 critic asked for rather
+   * than buying bare field. Every midground object is anchored to the band as well
+   * (`STATION.foot`, `HEDGE_FOOT`), so the station and the hedgerow come up with it
+   * and the strip between them and the roofs of the train does not open up.
+   */
+  const trackHeight = isWorld
+    ? Math.max(
+        150,
+        Math.min(460, Math.round(viewportH * (viewportH > viewportW ? 0.42 : 0.33))),
+      )
+    : isTablet
+      ? 200
+      : 140
+  /**
+   * The sizes on this screen — ONE calculation, done by TrackZone (the component
+   * that measures the row) and reported back out of it, which is the reason the
+   * parked stock and the coupled stock can never disagree about anything. See
+   * `onSizes` there and `drawSize` in WorldChoice for the gate this closes. The
+   * fallback is only ever used for the single frame before the row is measured.
+   */
+  const [worldSizes, setWorldSizes] = useState({
+    coupled: Math.round(trackHeight * 0.6),
+    offer: Math.round(trackHeight * 0.37),
+    bottomPad: 4,
+  })
+  const handleWorldSizes = useCallback(
+    (next: { coupled: number; offer: number; bottomPad: number }) => setWorldSizes(next),
+    [],
+  )
+  /**
+   * How much a placed wagon grows on its way in. See `grow` on `Flight`.
+   *
+   * Kept in a ref as well as computed, because the placement is decided inside a
+   * pointer event and must read the CURRENT sizes without the callback that does it
+   * being rebuilt (and every press handler with it) every time the row is measured.
+   */
+  const worldGrowRef = useRef(1)
+  useEffect(() => {
+    worldGrowRef.current = worldSizes.offer > 0 ? worldSizes.coupled / worldSizes.offer : 1
+  }, [worldSizes])
   const trackRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const paletteRef = useRef<HTMLDivElement>(null)
@@ -360,6 +539,7 @@ export default function App() {
       dy: 0,
       ms: SHED_MS,
       mode: 'shed',
+      grow: 1,
       itemKey: null,
     }))
   }, [wagonCargo])
@@ -403,10 +583,17 @@ export default function App() {
       return
     }
     if (goState === 'built') {
-      // A whole train, but not the one that was asked for. Air brakes, never the
+      // A train, but not the one that was asked for. Air brakes, never the
       // whistle, and `submit` still runs: it is what marks the wrong wagons red and
       // re-reads the task, which is the only place the game explains a "no".
+      //
+      // In world mode this state can only ever mean ONE thing — the load is right
+      // and there are not enough of it yet, because a wagon carrying anything else
+      // never reaches the rails (see `pickWanted` in utils/validation.ts). So the
+      // refusal also points at the dock, which is where the missing wagon is
+      // standing, in the same frame as the recoil.
       playBrake()
+      if (isWorld) nudgePalette()
       submit()
       return
     }
@@ -460,7 +647,14 @@ export default function App() {
    * commit so the real slot can be measured instead of guessed.
    */
   const launchPlace = useCallback(
-    (Icon: FC<TrainIcon>, iconSize: number, fromX: number, fromY: number, itemKey: number) => {
+    (
+      Icon: FC<TrainIcon>,
+      iconSize: number,
+      fromX: number,
+      fromY: number,
+      itemKey: number,
+      grow: number,
+    ) => {
       // Close out any earlier placement still in the air: only one slot may hide.
       const prevPending = pendingRef.current
       if (prevPending) finishFlight(prevPending.flightId)
@@ -469,7 +663,7 @@ export default function App() {
       setPendingKey(itemKey)
       setFlights((prev) => [
         ...prev,
-        { id, Icon, iconSize, x: fromX, y: fromY, dx: null, dy: null, ms: FLY_MS, mode: 'place', itemKey },
+        { id, Icon, iconSize, x: fromX, y: fromY, dx: null, dy: null, ms: FLY_MS, mode: 'place', grow, itemKey },
       ])
       armFlightTimer(id, FLY_MS)
     },
@@ -492,6 +686,7 @@ export default function App() {
           dy: session.originY - fromY,
           ms: SNAP_MS,
           mode: 'snap',
+          grow: 1,
           itemKey: null,
         },
       ])
@@ -636,22 +831,46 @@ export default function App() {
           dy = r.top + r.height / 2 - f.y
         }
         startedRef.current.add(f.id)
+        /**
+         * How the copy travels, and world mode's is a different journey.
+         *
+         * Classic flies a card's icon: it grows to 1.22, tilts, and lands at 1.18,
+         * which is the language of a token being carried out of a tray and dropped
+         * into a slot. In the world there is no tray and no token — the thing that
+         * left the siding is a wagon, at the size it will be on the rails, and a
+         * wagon that swelled by a fifth and tilted five degrees on the way would
+         * not be the same wagon that was standing there a frame ago. So it keeps
+         * its size and its attitude and simply rolls from where it stood to where
+         * it is going. Nothing here is a verdict; both journeys are hue-free and
+         * compositor-only.
+         */
+        const worldRoll = isWorld && f.mode === 'place'
         const anim = el.animate(
           f.mode === 'place'
-            ? [
-                { transform: 'translate(0px, 0px) translate(-50%, -50%) scale(1.05) rotate(-5deg)' },
-                {
-                  offset: 0.6,
-                  transform: `translate(${dx * 0.72}px, ${dy * 0.72}px) translate(-50%, -50%) scale(1.22) rotate(3deg)`,
-                },
-                {
-                  transform: `translate(${dx}px, ${dy}px) translate(-50%, -50%) scale(1.18) rotate(0deg)`,
-                },
-              ]
+            ? worldRoll
+              ? [
+                  { transform: 'translate(0px, 0px) translate(-50%, -50%) scale(1)' },
+                  {
+                    transform: `translate(${dx}px, ${dy}px) translate(-50%, -50%) scale(${f.grow})`,
+                  },
+                ]
+              : [
+                  { transform: 'translate(0px, 0px) translate(-50%, -50%) scale(1.05) rotate(-5deg)' },
+                  {
+                    offset: 0.6,
+                    transform: `translate(${dx * 0.72}px, ${dy * 0.72}px) translate(-50%, -50%) scale(1.22) rotate(3deg)`,
+                  },
+                  {
+                    transform: `translate(${dx}px, ${dy}px) translate(-50%, -50%) scale(1.18) rotate(0deg)`,
+                  },
+                ]
             : [
-                { transform: 'translate(0px, 0px) translate(-50%, -50%) scale(1.18)', opacity: 1 },
                 {
-                  transform: `translate(${dx}px, ${dy}px) translate(-50%, -50%) scale(0.8)`,
+                  transform: `translate(0px, 0px) translate(-50%, -50%) scale(${isWorld ? 1 : 1.18})`,
+                  opacity: 1,
+                },
+                {
+                  transform: `translate(${dx}px, ${dy}px) translate(-50%, -50%) scale(${isWorld ? 0.94 : 0.8})`,
                   opacity: 0.15,
                 },
               ],
@@ -659,7 +878,9 @@ export default function App() {
             duration: f.ms,
             easing:
               f.mode === 'place'
-                ? 'cubic-bezier(0.34, 0.72, 0.36, 1)'
+                ? worldRoll
+                  ? 'cubic-bezier(0.3, 0.7, 0.4, 1)'
+                  : 'cubic-bezier(0.34, 0.72, 0.36, 1)'
                 : 'cubic-bezier(0.4, 0.1, 0.3, 1)',
             fill: 'forwards',
           },
@@ -705,7 +926,7 @@ export default function App() {
       }
       // Glide from the card (or the finger) into the reserved slot rather than
       // appearing there.
-      launchPlace(s.Icon, s.iconSize, fromX, fromY, res.key)
+      launchPlace(s.Icon, s.iconSize, fromX, fromY, res.key, isWorld ? worldGrowRef.current : 1)
       return true
     },
     [addToTrain, armFlightTimer, launchPlace, liveTrain, shedWagons, tapKind],
@@ -798,6 +1019,48 @@ export default function App() {
       window.removeEventListener('pointercancel', endSession)
     }
   }, [checkOverTrack, endSession])
+
+  /**
+   * World mode: the engine is already standing on the rails — roadmap E2.
+   *
+   * Pick-one-of-three is one decision, and choosing the engine was never the
+   * decision: every engine a round offers is a right answer (`validateTrain` asks
+   * only that there IS one), so the engine row was three taps that could not be
+   * got wrong standing between the child and the one choice that matters. On the
+   * classic screen it stays, because that screen is the control. Here the engine is
+   * simply part of the scene from the first frame, exactly as it is in every
+   * reference frame — the train is always already there, waiting, and what the
+   * child does is add to it.
+   *
+   * A layout effect, so it lands in the same paint as the round it belongs to: an
+   * ordinary effect would show one frame of an empty engine bay at the start of
+   * every round. Which engine changes with the round's own number, so the child
+   * sees all three across a session without a random draw in a component.
+   */
+  const trainItems = game.trainItems
+  const taskLocos = game.task.locomotiveIds
+  const taskCount = game.task.count
+  const phase = game.phase
+  useLayoutEffect(() => {
+    if (!isWorld || taskLocos.length === 0) return
+    if (phase !== 'playing' && phase !== 'wrong') return
+    if (placedLoco(trainItems) !== undefined) return
+    /**
+     * And it is the yellow steam engine every time.
+     *
+     * Round 2 rotated the three engines with the round's own number, and the
+     * measured cost was that the round's engine was often the blue electric —
+     * chroma 116, quieter than the orange box wagon standing on the dock at
+     * 183.2. The subject of this screen may not be out-shouted by the shop, and
+     * `validateTrain` asks only that there IS an engine, so which one it is was
+     * never the child's decision to make. The reference picks the same way: every
+     * frame of Sago's own footage runs one saturated warm engine — yellow in
+     * frames-clean/frame-100 to -102 and in blind/sago-trains-02, green in
+     * blind/sago-trains-05 — as the loudest object in the picture.
+     */
+    const warm = taskLocos.includes('steam') ? 'steam' : taskLocos[0]
+    addToTrain({ kind: 'loco', id: isWorld ? warm : taskLocos[taskCount % taskLocos.length] })
+  }, [addToTrain, phase, taskCount, taskLocos, trainItems])
 
   // Trigger shake animation when shakeKey increments
   useEffect(() => {
@@ -918,9 +1181,95 @@ export default function App() {
     if (wasMuted) playUnmute()
   }, [speech])
 
-  const starSize = isTablet ? 30 : 22
-  const dotFilled = isTablet ? 22 : 16
-  const dotEmpty  = isTablet ? 17 : 12
+  /**
+   * The progress cluster: three level stars over a row of round-completion dots.
+   *
+   * World mode draws it about a third smaller, and it is INERT there and no longer
+   * in the sky. Measured hazard, and it was in the frame from E1: the cluster was
+   * a live 110x72 button whose accessible name is "Reset progress", sitting in the
+   * top right corner of a screen a four-year-old is playing on. Holding it wipes
+   * his level. Nothing in any reference frame is a destructive control and nothing
+   * in any reference frame is chrome at all, so in world mode this is paint: it
+   * hangs low on the near bank, out of the sky the critic measured empty, with
+   * `pointer-events: none`, and there is no way to reset from this screen. The
+   * parent's reset lives on the classic screen, which is one query string away and
+   * shares the same stored progress.
+   */
+  const starSize = isWorld ? (isTablet ? 22 : 16) : isTablet ? 30 : 22
+  const dotFilled = isWorld ? (isTablet ? 15 : 11) : isTablet ? 22 : 16
+  const dotEmpty  = isWorld ? (isTablet ? 12 : 9) : isTablet ? 17 : 12
+
+  const progressCluster = (
+    <div ref={starsRef} className="flex flex-col items-end gap-2 rounded-xl">
+      {/* stars */}
+      <div className="flex gap-1">
+        {[1, 2, 3].map((i) => (
+          <svg key={i} width={starSize} height={starSize} viewBox="0 0 24 24">
+            <polygon
+              points="12,2 14.8,9 22,9.5 16.5,14 18.2,21 12,17 5.8,21 7.5,14 2,9.5 9.2,9"
+              fill={i <= game.progress.level ? t.accent2 : t.panelEdge}
+              stroke={i <= game.progress.level ? t.accent : 'transparent'}
+              strokeWidth="0.6"
+            />
+          </svg>
+        ))}
+      </div>
+      {/* progress dots */}
+      <div className="flex gap-1.5">
+        {Array.from({ length: CORRECT_PER_LEVEL }).map((_, i) => (
+          <div
+            key={i}
+            className="rounded-full transition-all"
+            style={{
+              width: i < game.progress.correctInLevel ? dotFilled : dotEmpty,
+              height: i < game.progress.correctInLevel ? dotFilled : dotEmpty,
+              background: i < game.progress.correctInLevel ? t.good : t.panelEdge,
+              boxShadow: i < game.progress.correctInLevel
+                ? `inset 0 -2px 0 rgba(0,0,0,0.15), 0 2px 4px ${t.softShadow}`
+                : 'none',
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  )
+
+  /**
+   * The stock waiting at the far end of the running line — roadmap E3.
+   *
+   * Built here and handed to TrackZone, which renders it as the last item in the
+   * train's own flex row so it stands on the same rail, bottom-aligned, with no
+   * ledge, no coping and no second ladder anywhere in the frame. The sizes come
+   * back out of TrackZone (`onSizes`) because TrackZone is the component that
+   * measures the row; there is one calculation and both ends of the line read it.
+   */
+  const worldOffer = isWorld ? (
+    <WorldChoice
+      task={game.task}
+      /* Which wagon has nothing left to offer, and therefore is not standing
+         there — see `away` in WorldChoice. Off the rendered train, because it
+         decides paint. */
+      placedType={placedWagons(game.trainItems)[0]?.type ?? null}
+      full={wagonsOn >= game.task.count}
+      onPress={handlePalettePress}
+      popGo={popGo}
+      isRightNow={isRightNow}
+      loadUnsettled={
+        wagonsOn > 0 && !willDepart && game.phase !== 'departing' && game.phase !== 'celebrating'
+      }
+      /* Both straight out of the component that draws the coupled wagon — never a
+         factor applied here. Round 3 failed a gate on exactly that line: it read
+         `Math.round(trackHeight * 0.4)` under a comment claiming to be TrackZone's
+         own `wagonMax`, which was 0.8. */
+      drawSize={worldSizes.offer}
+      bottomPad={worldSizes.bottomPad}
+      /* Whose face is on the wagons still waiting on the line: the rider the NEXT
+         coupled wagon will have, so the animal standing on the wagon he taps is the
+         animal that rides it in. TrackZone hands its riders out by position in the
+         rake, so the next one is simply the number already on it. */
+      riderIndex={wagonsOn}
+    />
+  ) : null
 
   /*
    * Exactly one screen tall, and every box in the chain says so.
@@ -933,95 +1282,99 @@ export default function App() {
    * gives when it cannot is the palette — see the palette's own `min-h-0`.
    */
   return (
-    <div className="h-svh overflow-hidden flex justify-center" style={{ background: t.skyBot }}>
+    <div className="h-svh overflow-hidden flex justify-center" style={{ background: PAGE_BG }}>
       <div className="w-full h-full flex flex-col">
-        <Scene trackHeight={trackHeight}>
+        <SceneShell trackHeight={trackHeight}>
         <div
           ref={containerRef}
           onPointerDownCapture={handleAnyPress}
           className="relative w-full h-full flex flex-col select-none overflow-hidden"
           style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: t.ink }}
         >
-          {/* top bar */}
-          <div className="flex items-start justify-between px-3 pt-3 gap-2">
+          {/* top bar
+
+              World mode gives it no top padding, so the task sign's own top edge
+              IS the top edge of the frame. That is the difference between a board
+              screwed to the top of the picture and a card floating in the sky, and
+              floating in the sky was the measured objection: "a rounded beige card
+              with a rim floating in the sky". Twelve px of column height back, too,
+              which the choice row spends on the wagons. */}
+          <div className={`flex items-start justify-between px-3 gap-2 ${isWorld ? 'pt-0' : 'pt-3'}`}>
             <div data-touchable>
               <TaskHero
                 task={game.task}
-                onHelp={() => setHelpOpen(true)}
+                onHelp={isWorld ? null : () => setHelpOpen(true)}
                 pulse={pulseTask}
                 onSpeak={audio.speakTask}
                 isTablet={isTablet}
+                /* World mode: a smaller sign, hanging from the top of the frame
+                   rather than a card floating in the sky. */
+                world={isWorld}
               />
             </div>
-            {/* The parent's corner: mute first, then the stars. */}
+            {/* The parent's corner: the mute switch, and on the classic screen the
+                stars with the hold-to-reset behind them. World mode's progress is
+                paint on the near bank instead — see `progressCluster`. */}
             <div className="flex items-center gap-2">
               <MuteButton
                 muted={speech.muted}
                 onToggle={handleMuteToggle}
                 speechOff={!speech.canSpeakCzech}
                 isTablet={isTablet}
+                world={isWorld}
               />
-              <button
-              data-touchable
-              onPointerDown={startResetHold}
-              onPointerUp={stopResetHold}
-              onPointerLeave={stopResetHold}
-              onPointerCancel={stopResetHold}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleReset() }}
-              className="flex items-center justify-end touch-none"
-              style={{ minWidth: 88, minHeight: 72, padding: '8px 6px' }}
-              title="Hold to reset progress"
-              aria-label="Reset progress"
-            >
-              <div ref={starsRef} className="flex flex-col items-end gap-2 rounded-xl">
-                {/* stars */}
-                <div className="flex gap-1">
-                  {[1, 2, 3].map((i) => (
-                    <svg key={i} width={starSize} height={starSize} viewBox="0 0 24 24">
-                      <polygon
-                        points="12,2 14.8,9 22,9.5 16.5,14 18.2,21 12,17 5.8,21 7.5,14 2,9.5 9.2,9"
-                        fill={i <= game.progress.level ? t.accent2 : t.panelEdge}
-                        stroke={i <= game.progress.level ? t.accent : 'transparent'}
-                        strokeWidth="0.6"
-                      />
-                    </svg>
-                  ))}
-                </div>
-                {/* progress dots */}
-                <div className="flex gap-1.5">
-                  {Array.from({ length: CORRECT_PER_LEVEL }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="rounded-full transition-all"
-                      style={{
-                        width: i < game.progress.correctInLevel ? dotFilled : dotEmpty,
-                        height: i < game.progress.correctInLevel ? dotFilled : dotEmpty,
-                        background: i < game.progress.correctInLevel ? t.good : t.panelEdge,
-                        boxShadow: i < game.progress.correctInLevel
-                          ? `inset 0 -2px 0 rgba(0,0,0,0.15), 0 2px 4px ${t.softShadow}`
-                          : 'none',
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </button>
+              {!isWorld && (
+                <button
+                  data-touchable
+                  onPointerDown={startResetHold}
+                  onPointerUp={stopResetHold}
+                  onPointerLeave={stopResetHold}
+                  onPointerCancel={stopResetHold}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleReset() }}
+                  className="flex items-center justify-end touch-none"
+                  style={{ minWidth: 88, minHeight: 72, padding: '8px 6px' }}
+                  title="Hold to reset progress"
+                  aria-label="Reset progress"
+                >
+                  {progressCluster}
+                </button>
+              )}
             </div>
           </div>
 
-          {/* palette
-              The one flexible row, and the one that is allowed to give. `min-h-0`
-              lets it shrink below its own content, which is what guarantees the
-              rows below it — the rails and the go button — always get their full
-              height on a screen too short for all four. It has slack at both
-              orientations at the worst count there is (measured at count 10: 257 px
-              of room for a 250 px row of cards in landscape, 415 for 364 in
-              portrait, where the wagon row wraps), so nothing is clipped today.
-              This is the ordering of the sacrifice, not a sacrifice — and it is
-              also why the button no longer moves between rounds: the 29 px a
-              two-row dot block adds to the task panel comes out of this row's
-              slack instead of out of the bottom of the screen. */}
-          <div ref={paletteRef} className="flex-1 min-h-0 flex items-center justify-center px-3">
+          {/* World mode has no progress meter at all, and that is the last piece
+              of furniture leaving the picture.
+
+              It was a row of stars and dots floating bottom-left over the grass —
+              named, with the task sign, as one of "the last two pieces of furniture
+              in the frame" — and it was already inert paint here, because the
+              hold-to-reset behind it is a destructive control and had no business on
+              a four-year-old's screen. So it is gone. No reference frame has a
+              progress meter of any kind; the parent's copy still lives on the
+              classic screen, one query string away, off the same stored progress. */}
+
+          {/* The sky and the middle distance, and in world mode nothing else.
+
+              This is the row the waiting wagons used to stand in, and it is empty
+              now on purpose: they came down onto the running line (see `worldOffer`
+              below and `offer` in TrackZone), which is the whole of E3. The row
+              still exists and is still the one that gives, because that is what
+              guarantees the rows below it — the rails and the go button — always get
+              their full height on a screen too short for all of them; what stands
+              in it in world mode is the scene's own sky, hills and station, drawn
+              behind this column by `WorldScene`.
+
+              Classic keeps the palette here exactly as it was: `min-h-0` lets it
+              shrink below its own content, and it has slack at both orientations at
+              the worst count there is (measured at count 10: 257 px of room for a
+              250 px row of cards in landscape, 415 for 364 in portrait). */}
+          <div
+            ref={paletteRef}
+            className={`flex-1 min-h-0 flex justify-center px-3 ${
+              isWorld ? 'items-end' : 'items-center'
+            }`}
+          >
+            {!isWorld && (
             <DragPalette
               trainItems={game.trainItems}
               /* The round decides which cards exist — see data/levels.ts. */
@@ -1045,6 +1398,7 @@ export default function App() {
               }
               isTablet={isTablet}
             />
+            )}
           </div>
 
           {/* Where the item goes.
@@ -1064,7 +1418,14 @@ export default function App() {
               the top of the ground band, above the rails — which is where it is
               pointing anyway. */}
           <div className="relative h-0 shrink-0 flex justify-center pointer-events-none select-none z-10">
-            {game.trainItems.length === 0 && (
+            {/* Classic only. In world mode this was measured as "an abstract grey
+                arrow glyph on the retaining wall" — and that is what it is: a
+                symbol, in a mode built on the principle that the thing you touch is
+                the thing that moves. It has nothing to point at either, because the
+                place the load goes is already drawn as an empty bay in the rails and
+                that bay breathes on its own. There is no glyph anywhere in the
+                reference. */}
+            {!isWorld && game.trainItems.length === 0 && (
               <svg
                 width="38"
                 height="44"
@@ -1104,6 +1465,16 @@ export default function App() {
             trackHeight={trackHeight}
             onTapTrack={nudgePalette}
             pendingKey={pendingKey}
+            /* World mode: the band paints no ground of its own — the field the
+               rails are laid on belongs to the scene. */
+            world={isWorld}
+            /* And in world mode this component owns the ONE wagon size on the
+               screen: it folds the dock's width requirement into its own fit and
+               hands the answer to the dock. See `choiceCount` there. */
+            choiceCount={isWorld ? CHOICE_COUNT : 0}
+            /* The waiting stock, standing at the far end of these very rails. */
+            offer={worldOffer}
+            onSizes={isWorld ? handleWorldSizes : undefined}
           />
 
           {/* Send the train. Icon only: one disc, one arrow, no word anywhere near
@@ -1137,7 +1508,7 @@ export default function App() {
                Nothing pads the top: the pop overflows upward into the ground band
                and the track, which clip nothing. */
             style={{
-              background: t.skyBot,
+              background: GO_ROW_BG,
               paddingBottom: 'var(--go-pop-room)',
               marginTop: -40,
             }}
@@ -1186,8 +1557,12 @@ export default function App() {
               style={{
                 left: dragging.x,
                 top: dragging.y,
-                transform: 'translate(-50%, -50%) scale(1.18) rotate(-5deg)',
-                filter: `drop-shadow(0 12px 16px ${t.shadow})`,
+                /* World mode: same size, level, and casting nothing. The scene has
+                   no drop shadow anywhere in it and neither has the reference. */
+                transform: isWorld
+                  ? 'translate(-50%, -50%)'
+                  : 'translate(-50%, -50%) scale(1.18) rotate(-5deg)',
+                filter: isWorld ? 'none' : `drop-shadow(0 12px 16px ${t.shadow})`,
               }}
             >
               <dragging.Icon size={dragging.iconSize} />
@@ -1214,10 +1589,10 @@ export default function App() {
                 // for a wagon being replaced, exactly on the rails where that wagon
                 // stood, so the frame it is removed in is the frame this appears in.
                 transform:
-                  f.mode === 'shed'
+                  f.mode === 'shed' || isWorld
                     ? 'translate(0px, 0px) translate(-50%, -50%)'
                     : 'translate(0px, 0px) translate(-50%, -50%) scale(1.05) rotate(-5deg)',
-                filter: `drop-shadow(0 12px 16px ${t.shadow})`,
+                filter: isWorld ? 'none' : `drop-shadow(0 12px 16px ${t.shadow})`,
                 willChange: 'transform',
               }}
             >
@@ -1228,8 +1603,10 @@ export default function App() {
           {/* help modal */}
           <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} task={game.task} />
 
-          {/* celebration overlay */}
-          {game.phase === 'celebrating' && <Celebration />}
+          {/* The cheer. Classic washes the frame and drops a star on it; world
+              mode does not cover the place it just spent the whole round building
+              — see `WorldCheer`. */}
+          {game.phase === 'celebrating' && (isWorld ? <WorldCheer /> : <Celebration />)}
 
           {/* reset flash */}
           {resetting && (
@@ -1239,7 +1616,7 @@ export default function App() {
             />
           )}
         </div>
-        </Scene>
+        </SceneShell>
       </div>
     </div>
   )

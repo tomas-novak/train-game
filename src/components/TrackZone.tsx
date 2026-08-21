@@ -1,21 +1,39 @@
 import {
   forwardRef,
+  useEffect,
   useId,
   useLayoutEffect,
   useRef,
   useState,
   type FC,
+  type ReactNode,
   type RefObject,
 } from 'react'
 import type { KeyedTrainItem, TrainIcon, ValidationResult, WagonType } from '../types'
 import { LOCOMOTIVES } from '../data/locomotives'
 import { wagonIcon } from '../data/wagons'
+import {
+  BEAK,
+  FRIENDS,
+  LOCO_RATIO,
+  OFFER_GAP,
+  OFFER_MIN,
+  OFFER_PAD,
+  OFFER_SCALE,
+  OFFER_SHARE,
+  OFFER_TAIL_BLEED,
+  RIDER,
+  WAGON_BAND,
+  WAGON_LINE,
+} from '../data/world'
+import { Critter } from './svgs'
 import type { GamePhase } from '../hooks/useGameState'
 import { CountRow } from './CountRow'
 import { countRowHeight } from '../utils/countRows'
-import { SKY } from '../theme'
+import { SKY, WORLD } from '../theme'
 
 const t = SKY
+const w = WORLD
 
 const LOCO_ICON = Object.fromEntries(LOCOMOTIVES.map((l) => [l.id, l.icon]))
 
@@ -34,21 +52,68 @@ const LOCO_ICON = Object.fromEntries(LOCOMOTIVES.map((l) => [l.id, l.icon]))
  * becomes true, so the one-shot swell runs once, on the frame the answer arrives,
  * and never again while it stays right.
  */
-const Signal: FC<{ isGo: boolean; trackHeight: number }> = ({ isGo, trackHeight }) => {
-  const lampH  = Math.round(trackHeight * 0.543)
-  const lampW  = Math.round(trackHeight * 0.229)
-  const lightD = Math.round(trackHeight * 0.129)
-  const left   = Math.round(trackHeight * 0.286)
+const Signal: FC<{ isGo: boolean; trackHeight: number; unit: number; world: boolean }> = ({
+  isGo,
+  trackHeight,
+  unit,
+  world,
+}) => {
+  /* `unit` and not `trackHeight`: in world mode the band is taller than it was and
+     the signal is not the thing that should grow with it. Everything about the
+     assembly is a fraction of one number so the whole of it scales together. */
+  const lampH  = Math.round(unit * 0.543)
+  const lampW  = Math.round(unit * 0.229)
+  const lightD = Math.round(unit * 0.129)
+  /**
+   * World mode stands it hard against the left edge of the frame.
+   *
+   * The train is centred now (see `padStart`), so the space left of it is the
+   * signal's and the signal's alone: it is pushed out to the edge and the row's
+   * left pad is sized to keep the rolling stock clear of it at every count and in
+   * both orientations. It stays behind the train in the paint order, which is
+   * where a signal beside a line belongs — and, since it is never overlapped, the
+   * lamp that says "the train is right" can never be hidden by the train.
+   */
+  const left   = Math.round(unit * (world ? 0.06 : 0.286))
 
   return (
-    <div className="absolute pointer-events-none flex flex-col" style={{ left, top: -2, height: trackHeight + 2 }}>
+    <div
+      className="absolute pointer-events-none flex flex-col items-center"
+      /* World: the post runs 20 px past the bottom of the band, so its foot is
+         swallowed by the near bank instead of stopping in mid-air. */
+      style={{ left, top: -2, height: trackHeight + (world ? 22 : 2) }}
+    >
+      {/*
+        The target board, world mode only — and it is the whole of what turns two
+        coloured dots into a railway signal.
+
+        Round 1's signal read as a road sign and round 2's as a traffic light,
+        which on a railway is the worse of the two mistakes. What a flat drawing
+        has to say "signal" with is the board the lamps are mounted on: every
+        real one has a pale target behind the lights, and nothing else on a road
+        does. So the housing now sits on a cream board a few px wider than itself,
+        and the post below it is a post rather than a stick — see `signalBoard`.
+      */}
+      <div
+        className="rounded-xl"
+        style={
+          world
+            ? { background: w.signalBoard, padding: 5, marginTop: 2 }
+            : undefined
+        }
+      >
       <div
         data-signal={isGo ? 'go' : 'stop'}
         className={`rounded-xl flex flex-col items-center justify-center${isGo ? ' lamp-go' : ''}`}
         style={{
-          background: 'linear-gradient(180deg, #3a3a3a, #1a1a1a)',
+          /* World mode paints flat and casts nothing: the reference art has no
+             gradient and no drop shadow anywhere, and a signal box was one of the
+             three places ours still had both. */
+          background: world ? w.signalHousing : 'linear-gradient(180deg, #3a3a3a, #1a1a1a)',
           width: lampW, height: lampH, padding: 5, gap: 4, marginTop: 6,
-          boxShadow: '0 4px 8px rgba(0,0,0,0.3), inset 0 -2px 0 rgba(0,0,0,0.6)',
+          boxShadow: world
+            ? 'none'
+            : '0 4px 8px rgba(0,0,0,0.3), inset 0 -2px 0 rgba(0,0,0,0.6)',
         }}
       >
         <div
@@ -57,10 +122,18 @@ const Signal: FC<{ isGo: boolean; trackHeight: number }> = ({ isGo, trackHeight 
           className={isGo ? undefined : 'animate-pulse'}
           style={{
             width: lightD, height: lightD, borderRadius: '50%',
-            background: isGo
-              ? 'radial-gradient(circle at 35% 30%, #555, #2a2a2a)'
-              : `radial-gradient(circle at 35% 30%, #ff8a8a, ${t.bad})`,
-            boxShadow: isGo ? 'none' : `0 0 12px 4px ${t.bad}aa`,
+            /* World: flat fills and no cast glow. The brief for this piece bans
+               gradients, strokes and drop shadows because the reference has none,
+               and the pulsing red lamp was the one place in world mode that still
+               painted a `0 0 12px` halo — the critic measured it. The pulse itself
+               stays: it is opacity only, and it is the thing that says the signal
+               is a live object rather than a painted dot. */
+            background: world
+              ? isGo ? '#3a4048' : t.bad
+              : isGo
+                ? 'radial-gradient(circle at 35% 30%, #555, #2a2a2a)'
+                : `radial-gradient(circle at 35% 30%, #ff8a8a, ${t.bad})`,
+            boxShadow: world || isGo ? 'none' : `0 0 12px 4px ${t.bad}aa`,
           }}
         />
         <div
@@ -68,14 +141,43 @@ const Signal: FC<{ isGo: boolean; trackHeight: number }> = ({ isGo, trackHeight 
           data-lit={isGo ? 'true' : 'false'}
           style={{
             width: lightD, height: lightD, borderRadius: '50%',
-            background: isGo
-              ? `radial-gradient(circle at 35% 30%, #b8e5b8, ${t.good})`
-              : 'radial-gradient(circle at 35% 30%, #555, #2a2a2a)',
-            boxShadow: isGo ? `0 0 12px 4px ${t.good}aa` : 'none',
+            background: world
+              ? isGo ? t.good : '#3a4048'
+              : isGo
+                ? `radial-gradient(circle at 35% 30%, #b8e5b8, ${t.good})`
+                : 'radial-gradient(circle at 35% 30%, #555, #2a2a2a)',
+            boxShadow: !world && isGo ? `0 0 12px 4px ${t.good}aa` : 'none',
           }}
         />
       </div>
-      <div style={{ flex: 1, width: 4, background: '#666', borderRadius: 2, margin: '0 auto' }} />
+      </div>
+      {/* The mast. A wooden post in the world, not a grey rod: the grey mast was
+          named as one of the frame's meaningless grey shapes — and in round 3 it
+          is a post that has been PLANTED. Round 2's was a 3 px stick that stopped
+          in the grass with no foot, which is most of why the thing above it read
+          as a traffic light: nothing about the assembly said it had been driven
+          into the ground beside a railway. It is 11 px wide now, and there is a
+          foot at the bottom of it, buried in the near bank. */}
+      <div
+        style={{
+          flex: 1,
+          width: world ? 11 : 4,
+          background: world ? w.signalPost : '#666',
+          borderRadius: world ? 3 : 2,
+          margin: '0 auto',
+        }}
+      />
+      {world && (
+        <div
+          style={{
+            width: 26,
+            height: 9,
+            marginTop: -1,
+            borderRadius: 3,
+            background: w.signalPostDark,
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -120,6 +222,18 @@ const SLOT_SHADE = '#9ba6bf'
 const SLOT_LIP = '#e0e5ef'
 
 /**
+ * ...and in world mode the ground the bay is pressed into is a green field, not
+ * grey ballast, so the three tones have to be that field's own. The rule is the
+ * same rule and it is the only thing that carries over: a bay is a step down
+ * into whatever it is standing in, so it is drawn in three values of the ground
+ * and in no hue of its own. The classic values are the literals above; the world
+ * values are `WORLD.slot*`, and the swap is a custom property set on the band
+ * root, because these two SVGs are shared by both modes and must not learn which
+ * one they are in.
+ */
+const slotVar = (name: string, fallback: string) => `var(${name}, ${fallback})`
+
+/**
  * An empty slot on the rails — the bay a wagon is going to stand in.
  *
  * This replaces the old ghost train, which drew a locomotive and exactly two
@@ -150,9 +264,9 @@ const SlotWagon: FC<TrainIcon> = ({ size = 80 }) => (
     {/* Three flat fills, no strokes and no gradients, like everything else in the
         game: the lit near lip, the floor of the bay, and the shadow under the far
         lip. Drawn bottom-up so each sits on the one before it. */}
-    <rect x="6" y="39" width="88" height="31" rx="13" fill={SLOT_LIP} />
-    <rect x="8" y="36" width="84" height="30" rx="12" fill={SLOT_FLOOR} />
-    <rect x="12" y="36" width="76" height="11" rx="5" fill={SLOT_SHADE} />
+    <rect x="6" y="39" width="88" height="31" rx="13" fill={slotVar('--slot-lip', SLOT_LIP)} />
+    <rect x="8" y="36" width="84" height="30" rx="12" fill={slotVar('--slot-floor', SLOT_FLOOR)} />
+    <rect x="12" y="36" width="76" height="11" rx="5" fill={slotVar('--slot-shade', SLOT_SHADE)} />
   </svg>
 )
 
@@ -170,9 +284,9 @@ const SlotLoco: FC<TrainIcon> = ({ size = 100 }) => (
     style={{ display: 'block' }}
     xmlns="http://www.w3.org/2000/svg"
   >
-    <rect x="6" y="39" width="128" height="31" rx="13" fill={SLOT_LIP} />
-    <rect x="8" y="36" width="124" height="30" rx="12" fill={SLOT_FLOOR} />
-    <rect x="12" y="36" width="116" height="11" rx="5" fill={SLOT_SHADE} />
+    <rect x="6" y="39" width="128" height="31" rx="13" fill={slotVar('--slot-lip', SLOT_LIP)} />
+    <rect x="8" y="36" width="124" height="30" rx="12" fill={slotVar('--slot-floor', SLOT_FLOOR)} />
+    <rect x="12" y="36" width="116" height="11" rx="5" fill={slotVar('--slot-shade', SLOT_SHADE)} />
   </svg>
 )
 
@@ -256,6 +370,73 @@ const CountPips: FC<{
   </div>
 )
 
+/**
+ * The animal riding on a coupled wagon — roadmap E3, world mode only.
+ *
+ * E2 stood a full-size animal BESIDE each of the three OFFERED wagons, and the
+ * measured verdict was that it was a large part of why the offer outweighed the
+ * train. The reference puts its characters on the train instead: in
+ * frames-clean/frame-030 a rabbit is standing on the leading wagon's roof with
+ * four more heads looking out of the openings, and frame-040 has a rabbit and a
+ * sloth up on two wagons of a moving rake. That is what makes a Sago train worth
+ * looking at, and it is the difference between a train and a row of containers.
+ *
+ * So one of them stands on every wagon the child has actually coupled. Three
+ * consequences, all of them the point:
+ *
+ *   - the faces are on the train, so the loudest, most legible objects in the frame
+ *     belong to the thing the child built;
+ *   - every one of them is inside a tap target that answers (tapping a coupled
+ *     wagon takes it off again), which is the objection E2 was given about inert
+ *     faces on the near bank, closed by construction;
+ *   - the train visibly gains a passenger each time a wagon arrives, so growing the
+ *     rake is a thing that happens to somebody rather than a count going up.
+ *
+ * It stands over the near END of the wagon (`RIDER.x`), never over the opening, so
+ * the load the round asked for is never covered. Feet on the body's top rim: every
+ * wagon drawing is a 100x76 box whose body top edge is at y=19, i.e. 0.75 of the
+ * way up, and `RIDER.foot` tucks them a hair behind it.
+ */
+/*
+ * Exported in E3 round 3, because the wagons WAITING on the line carry one too now.
+ *
+ * "Put a face in each parked wagon's window so the eye lands on a choice instead of
+ * on the inert engine — a face costs almost no ink and is how frames-clean/frame-030
+ * makes its stock the subject." Every wagon standing in frame-030, -031, -032 and
+ * -041 has somebody on it or in it, the parked ones included, and the same animal
+ * stays with the same wagon when it moves. So WorldChoice draws this on each parked
+ * wagon, at the index the wagon's rider will have once it is coupled, and the flying
+ * copy carries it too — one drawing, one component, one set of numbers, rather than
+ * a second rider re-derived beside this one.
+ */
+export const WagonRider: FC<{ index: number; wagonSz: number; pad: number }> = ({ index, wagonSz, pad }) => {
+  const drawH = (wagonSz * 76) / 100
+  const h = Math.round(drawH * RIDER.h)
+  const w2 = Math.round(h * RIDER.aspect)
+  const spec = FRIENDS[index % FRIENDS.length]
+  return (
+    <span
+      aria-hidden="true"
+      /* Idling, and out of step with the other riders: every character in every
+         reference frame breathes. One composited transform on one element. */
+      className="wr-rider absolute pointer-events-none select-none"
+      style={{
+        left: pad + Math.round(wagonSz * RIDER.x - w2 / 2),
+        bottom: pad + Math.round(drawH * RIDER.foot),
+        width: w2,
+        height: h,
+        animationDelay: `${(index % 3) * 780}ms`,
+      }}
+    >
+      <Critter
+        spec={{ ...spec, ink: w.cubInk, beak: BEAK }}
+        width={w2}
+        height={h}
+      />
+    </span>
+  )
+}
+
 interface Props {
   trainItems: KeyedTrainItem[]
   onRemoveItem: (key: number) => void
@@ -288,6 +469,47 @@ interface Props {
    * flying copy lands on it — the child only ever sees one of each item.
    */
   pendingKey?: number | null
+  /**
+   * World mode — roadmap E1.
+   *
+   * The band stops being a band. In classic it paints its own flat grey ballast
+   * across the full width, with a grey-blue rail gradient on it and a shadow
+   * along both inside edges: a strip laid over the picture, and the strongest
+   * shape on the screen. In world mode it paints nothing at all — the ground it
+   * stands on belongs to `WorldScene` and runs from above the rails to off the
+   * bottom of the screen — and all this component contributes is the permanent
+   * way itself: warm wooden sleepers and two brown rails, sitting on that
+   * ground. Nothing about the layout, the sizing, the slots, the counter or any
+   * of the events changes; this only ever chooses colours and whether a fill is
+   * painted.
+   */
+  world?: boolean
+  /**
+   * How many wagons stand waiting in the world, world mode only — a SIZING input.
+   *
+   * They are on THIS row now. E2 gave them a row of their own above the rails,
+   * which is what made the frame read as two railways, so the width they need is
+   * folded into the same `fit` the train uses and comes out of the same line. See
+   * `offerUnits`.
+   */
+  choiceCount?: number
+  /**
+   * ...and the waiting wagons themselves, rendered as the last item in this row so
+   * they stand on the very rail the train stands on.
+   *
+   * A node and not a component, because the sizes it needs are computed here (they
+   * depend on the measured row width) and reported back out through `onSizes`. The
+   * one thing that may never happen again is two independent size calculations with
+   * a comment asserting they agree — that was round 3's failed gate, a waiting wagon
+   * drawn at exactly half the wagon it became.
+   */
+  offer?: ReactNode
+  /**
+   * The three numbers the offer is drawn from: the coupled wagon size, the parked
+   * wagon size, and how far a parked wagon's box must be padded at the bottom for
+   * its wheels to land on the same rail head as a coupled wagon's.
+   */
+  onSizes?: (s: { coupled: number; offer: number; bottomPad: number }) => void
 }
 
 export const TrackZone = forwardRef<HTMLDivElement, Props>(
@@ -305,6 +527,10 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
       trackHeight = 140,
       onTapTrack,
       pendingKey = null,
+      world = false,
+      choiceCount = 0,
+      offer = null,
+      onSizes,
     },
     ref,
   ) => {
@@ -312,6 +538,20 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
     const isDeparting = phase === 'departing'
     const patternId = useId()
     const rowRef = useRef<HTMLDivElement>(null)
+    /**
+     * The train's own group inside that row, and the reason it exists is the
+     * departure.
+     *
+     * E3 puts the waiting stock in this same row (that is the whole point: one
+     * line), and the row is what carries `train-depart`, `train-full` and the
+     * rail-tap hop. Measured on the first departure after the move: the three parked
+     * wagons slid off the left edge with the train, so a round ended with the child
+     * watching the wagons he had NOT chosen leave as well. Every one-shot that means
+     * "the train" now lives on this element instead, and the row keeps only the two
+     * jobs that are genuinely the row's: being measured, and holding the offer at the
+     * far end of it.
+     */
+    const trainRef = useRef<HTMLDivElement>(null)
     const counterRef = useRef<HTMLDivElement>(null)
     /** The flat green wash that fires once when the train reaches its length. */
     const washRef = useRef<HTMLDivElement>(null)
@@ -409,7 +649,7 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
         el.classList.add('pip-land')
       }
       if (targetCount > 0 && filled >= targetCount) {
-        const train = rowRef.current
+        const train = trainRef.current
         if (train) {
           train.classList.remove('train-full')
           void train.offsetWidth
@@ -457,7 +697,11 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
     const handleTrackPress = (e: React.PointerEvent) => {
       const target = e.target as Element | null
       if (target && target.closest('button')) return
-      const row = rowRef.current
+      /* A tap on one of the parked wagons is that wagon's own event: it is inside
+         this band now, and hopping the whole row would jog the train the child did
+         not touch. WorldChoice answers it in the same frame. */
+      if (target && target.closest('[data-card]')) return
+      const row = trainRef.current
       if (row && !isDeparting) {
         row.classList.remove('ghost-jump')
         void row.offsetWidth
@@ -467,8 +711,24 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
     }
 
     const railOff = Math.round(trackHeight * 0.371)
-    const slpY    = railOff + 4
-    const slpH    = trackHeight - railOff * 2 - 8
+    /**
+     * The sleepers.
+     *
+     * Classic keeps its own numbers exactly: 28-wide ties on a 72 px pitch,
+     * inset four px inside the rails.
+     *
+     * World mode's are the ties of a real ladder — see `WORLD.rail` in theme.ts
+     * for the two failed attempts and what the reference actually draws. They are
+     * DARK BROWN on a mid-grey ballast, 26 of every 48 px so there is a real stone
+     * gap between each pair, and they are laid on a bed between two rails rather
+     * than hanging under one. Both tones are darker than the field either side of
+     * them, which is the whole of what round 2 got backwards: its tabs were
+     * LIGHTER than both the rail and the ground, so the assembly read as a dashed
+     * road marking. This one is 35 px of dark ladder on a green field — the
+     * second-heaviest object in the picture, which is its rank in every reference
+     * frame.
+     */
+    const slpW    = world ? 26 : 28
     const padL    = Math.round(trackHeight * 0.686)
 
     /**
@@ -491,24 +751,334 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
      * phase: there is nothing left to scroll to, and nothing can hide off-frame.
      */
     const ITEM_PAD = 8   // the p-1 either side of every item and every slot
-    const ROW_PAD_R = 16
+    const ROW_PAD_R = world ? 4 : 16
     const slotsWanted = Math.max(1, targetCount)
+    /**
+     * What the signal is sized against, and it is deliberately not the band.
+     *
+     * The band is the ground the train stands on; the signal is one small piece of
+     * lineside furniture standing beside it, and in every reference frame that
+     * carries one it is about a wagon tall. Tying it to `trackHeight` meant a
+     * taller band grew the signal with it and the room reserved for it ate the
+     * rails the train needed.
+     */
+    /* ...and clamped, because E3 round 2 grew the band and a fraction of a bigger
+       band is a bigger signal. 210 px of assembly is what measured right at
+       trackHeight 338 and there is no reason for a taller frame to want a taller
+       piece of lineside furniture. */
+    const signalUnit = world ? Math.min(210, Math.round(trackHeight * 0.62)) : trackHeight
+    /**
+     * ...and in world mode the drawings are bigger inside that same band.
+     *
+     * Measured on round 2: our locomotive was 37 px of body and about 72 px
+     * including chimney and steam in a 768 px frame — 9% — while the reference's
+     * rolling stock is 25-30% of frame height and is the subject of the picture
+     * (frames-clean/frame-095, frame-140; blind/sago-trains-02 makes one wagon
+     * taller than half the frame). The train had become the most saturated thing
+     * on our screen and was still one of the smallest.
+     *
+     * The band's height cannot grow — the column is full, and the row that would
+     * pay for it is the palette, which has 7 px of slack at count 10 — but the
+     * drawing inside the band can: a wagon at 0.68 of the band instead of 0.557
+     * is 103 px of drawn height rather than 84, i.e. 13.4% of a 768 px frame
+     * rather than 11%, and it still clears the rail assembly below it and the
+     * count row above it at both orientations. Classic keeps 0.657/0.557 exactly.
+     */
+    /*
+     * Round 4 raised both factors and took the band's height down to pay for it.
+     * E3 lowers the wagon's factor again, and this time the band is not what
+     * limits it: the WIDTH is.
+     *
+     * The three waiting wagons used to have a row of their own above the rails, so
+     * the train had the whole width to itself and a count-2 round drew a 228 px
+     * wagon. They now stand on the running line, at the far end of it, so one line
+     * has to hold the engine, every wagon the round asks for, AND the three that
+     * are waiting. `fit` below is what resolves that, and at a count of two on a
+     * 1024 px frame it lands a wagon at about 175 px wide and 133 px of drawn
+     * height — 17% of a 768 px frame, against the reference's own 18-20%
+     * (frames-clean/frame-030 draws five wagons of ~180 px in a 980 px frame,
+     * frame-040 four of ~175). So these factors are only ceilings now; they stop a
+     * one-wagon round drawing a wagon taller than the band, and nothing else.
+     *
+     * The engine's factor is higher than the wagons' because its drawing is a
+     * 140x76 box against their 100x76: at equal width it is nearly half as tall.
+     * 1.4 makes the two drawn heights identical, and 1.55 is deliberately past it,
+     * because in blind/sago-trains-01 and frames-clean/frame-030 the engine is
+     * visibly the tallest thing on the rails. Classic keeps 0.657/0.557 exactly.
+     */
+    /*
+     * E3 round 2 turns the world's wish into a HEIGHT, and that is the whole of the
+     * failed gate.
+     *
+     * Round 1 wrote these as fractions of the band and then let one `fit` factor
+     * divide the row's WIDTH between the engine, the round's wagons and the three
+     * parked ones — so the band's height was a ceiling nothing ever reached and the
+     * drawing size was, in the end, a function of the frame's width alone. In
+     * landscape that lands where the reference lands. In portrait the surplus 256 px
+     * of a 768x1024 frame went to empty sky and the train came out at 24,339 ink px
+     * against a 32,447 px station and a 21,409 px button: measured, and the reason
+     * this round exists.
+     *
+     * So a coupled wagon now WANTS `WAGON_BAND` of the band's height (see
+     * data/world.ts) whatever the frame's shape, the engine is `LOCO_RATIO` of that
+     * width, and `fit` below may only ever shrink the pair from there. The 100/76 is
+     * the wagon drawing's own box: the wish is a drawn HEIGHT and this is the width
+     * that produces it.
+     */
+    /* Classic's two ceilings, to the digit as they have always been. World mode's
+       size does not come from here any more — see `worldWagon` below. */
     const locoMax  = Math.round(trackHeight * 0.657)
     const wagonMax = Math.round(trackHeight * 0.557)
     /* Only the drawings scale; the padding either side of each of them does not,
        so it comes off the top before the factor is worked out. Four px of slack
        covers the rounding of every individual size. */
+    /**
+     * Where the train starts.
+     *
+     * Classic hangs the row off a left pad wide enough for the signal and the
+     * count pips. World mode centred, which was right while the train was the only
+     * thing on the line; it is wrong now that the waiting stock is parked at the
+     * far end of the same line, because the two would be centred as one block and
+     * the train would drift right as the round got longer. So the train hangs off
+     * the LEFT — after the signal's own room — and grows towards the stock it is
+     * going to absorb, which is the only reading of the frame that makes the offer
+     * "further along the line" rather than "a second train".
+     *
+     * The pad is the signal's room and nothing else. It has to be real room: the
+     * signal is the one device that says the train is right, so it may never be
+     * covered, and it stands BEHIND the rolling stock (no z-index) because that is
+     * where a signal beside a line is.
+     */
+    /*
+     * ...and in E3 round 2 the world reserves nothing at all here.
+     *
+     * The signal used to be given a third of its own width as room, so no piece of
+     * rolling stock could stand on it. That room is 71 px of a 768 px line — 10% of
+     * the railway spent on a gap — and it bought nothing, because the one part of the
+     * signal that carries information is the LAMP, and the lamp is at the top of the
+     * band while the stock stands at the bottom of it: at trackHeight 430 the lamp
+     * assembly ends 145 px down and the tallest thing on the rails begins 253 px
+     * down. So the post is behind the train, as a lineside post is, the lamp is above
+     * its roofs where nothing can cover it, and the 71 px went to the wagons.
+     */
+    const padStart = world ? 8 : padL
+    /**
+     * One line, two claims on it — and this is the arithmetic the whole
+     * composition rests on.
+     *
+     * `drawNeed` is what the train wants: the engine plus one wagon per unit the
+     * round asked for. `offerNeed` is what the waiting stock wants: three wagons at
+     * `OFFER_SCALE` of that same size. They are summed, not compared, because they
+     * are standing on the same rails — E2 gave each of them the full width of its
+     * own row and that is exactly what made the frame read as two railways.
+     *
+     * Drawing the offer at a fraction of the coupled size is what keeps the trade
+     * from eating the train: ink is an area, so three wagons at 0.62 carry
+     * 3 x 0.62^2 = 1.15 units of drawn mass against the train's 3.62 at a count of
+     * two. See `OFFER_SCALE` in data/world.ts for the measurement that fraction
+     * answers and for why the flight, not the size, is what keeps the wagon the
+     * child touched the wagon that travels.
+     */
+    /**
+     * CLASSIC's sizing, unchanged to the digit: one factor that makes the engine and
+     * every bay of the round fit between the two edges of the strip. It is the right
+     * arithmetic there — the classic band is a 200 px strip laid across a picture, its
+     * bays are the device the child counts along, and ten of them must all be in it.
+     */
     const drawNeed = locoMax + slotsWanted * wagonMax
-    const drawRoom = rowW > 0
-      ? Math.max(120, rowW - padL - ROW_PAD_R - ITEM_PAD * (slotsWanted + 1) - 4)
-      : drawNeed
-    const fit      = Math.min(1, drawRoom / drawNeed)
-    const locoSz   = Math.max(28, Math.round(locoMax * fit))
-    const wagonSz  = Math.max(24, Math.round(wagonMax * fit))
+    const classicPads = padStart + ROW_PAD_R + ITEM_PAD * (slotsWanted + 1) + 4
+    const classicRoom = rowW > 0 ? Math.max(120, rowW - classicPads) : drawNeed
+    const classicFit = Math.min(1, classicRoom / drawNeed)
+
+    /**
+     * WORLD's sizing — and this is E3 round 4, the failed gate, and the only real
+     * change in this file.
+     *
+     * Every earlier round solved for "the engine, all `targetCount` wagons and the
+     * three parked ones fit between the two frame edges", so the drawn size was a
+     * function of the round's NUMBER. Measured: count 2 gave a 256x143 engine and a
+     * train band holding 55% of the frame's ink; count 5 gave 165x93 and 37%; count 10
+     * gave 98x57, 26%, and scenery carrying 2.9x the train's ink. The composition was
+     * true only at the count it had been tuned on, and a long train read as a small
+     * train.
+     *
+     * The reference solves the opposite way round. It draws its stock at one size and
+     * lets the frame cut the line — blind/sago-trains-02 and -04 clip the last wagon
+     * at the right edge, frames-clean/frame-041 clips a whole wagon and half of another
+     * at the left, sago-trains-04 does not have its engine in the picture at all. So
+     * the size is PINNED here:
+     *
+     *   - it is `WAGON_LINE` of the line's width, which mentions no count at all, so
+     *     a one-wagon round and a three-wagon round draw the same wagon;
+     *   - `WAGON_BAND` of the band survives only as a ceiling, so a short band can
+     *     never draw a wagon taller than the ground it stands on;
+     *   - the engine is `LOCO_RATIO` of the wagon, as before, because the two drawings
+     *     are a 140x76 box and a 100x76 box and this is what makes the engine the
+     *     tallest thing on the rails;
+     *   - and anything the line cannot hold runs off the NEAR edge, where the row's
+     *     `justify-end` and `overflow-hidden` put it. Nothing is scrollable and
+     *     nothing is reachable off-frame; the newest wagon, the whole of the rake's
+     *     growing end and all three parked wagons are always inside the picture,
+     *     because the growing end is the end pinned to the frame.
+     *
+     * What stops the line growing without limit is `WORLD_MAX_COUNT`, in
+     * data/world.ts: the engine is the frame's most saturated object and its only
+     * large face, and past three coupled wagons there is none of it left in the
+     * picture. The world round therefore asks for at most three.
+     */
+    const wagonWish = world ? Math.round((trackHeight * WAGON_BAND * 100) / 76) : 0
+    const worldWagon = rowW > 0
+      ? Math.max(OFFER_MIN, Math.min(wagonWish, Math.round(rowW * WAGON_LINE)))
+      : wagonWish
+    /**
+     * The room the parked block is measured against — the line minus the padding that
+     * does not scale. Count-independent on purpose (`SLOT_ALLOW` and not
+     * `slotsWanted`): the one thing this round exists to delete is a size that moves
+     * when the round's number does.
+     */
+    const SLOT_ALLOW = 3
+    const worldPads =
+      padStart +
+      ROW_PAD_R +
+      ITEM_PAD * (SLOT_ALLOW + 1) +
+      choiceCount * OFFER_PAD * 2 +
+      Math.max(0, choiceCount - 1) * OFFER_GAP +
+      /* the gap between the rake and the stock parked in front of it */
+      26 +
+      4
+    const lineRoom = rowW > 0 ? Math.max(120, rowW - worldPads) : worldWagon * 5
+    /**
+     * How big a PARKED wagon is drawn: `OFFER_SCALE` of the coupled size, never
+     * larger than the coupled size (the further stock may not be the bigger stock),
+     * never more than `OFFER_SHARE` of the line between the three of them, and never
+     * below `OFFER_MIN`, because the load painted inside it is the whole question the
+     * round asks and below that width it stops being a shape.
+     */
+    const parkedCap = Math.max(OFFER_MIN, Math.floor((lineRoom * OFFER_SHARE) / Math.max(1, choiceCount)))
+    const parkedSize = (coupled: number) =>
+      Math.min(coupled, parkedCap, Math.max(OFFER_MIN, Math.round(coupled * OFFER_SCALE)))
+    const locoSz  = world
+      ? Math.max(28, Math.round(worldWagon * LOCO_RATIO))
+      : Math.max(28, Math.round(locoMax * classicFit))
+    const wagonSz = world
+      ? Math.max(24, worldWagon)
+      : Math.max(24, Math.round(wagonMax * classicFit))
+    const offerSz = parkedSize(wagonSz)
+
+    /**
+     * Where the one rail line goes, in world mode — under the wheels, and now at
+     * the BOTTOM of the band rather than half way up it.
+     *
+     * Round 1 drew classic's ladder in brown: a 6 px rail at `railOff` from the
+     * top, another at `railOff` from the bottom, ties filling the gap. Measured at
+     * 1024x768 that put the upper rail across the locomotive at chimney height,
+     * ties above and below the rolling stock, and the wheels resting on nothing —
+     * a fence lying across the picture with a toy balanced on it.
+     *
+     * The reference never does that. One dark line, the wheels sitting ON it, the
+     * sleepers hanging below it, nothing above it (blind/sago-trains-02 and -07,
+     * frames-clean/frame-140). Rounds 2-4 placed the line by CENTRING the wagon
+     * drawing in the band and putting the rail under its wheels, which worked but
+     * tied the track's height to the wagon's: shrink the round's wagons and the
+     * whole permanent way climbed up the frame with them. E3 anchors it to the
+     * bottom of the band instead — the track is the ground, and ground does not
+     * move when the stock on it changes size — and hangs the stock off it.
+     *
+     * The assembly's own thicknesses come off the BAND, so the permanent way is the
+     * same permanent way whatever the round asks for: 38 px in landscape and 49 in
+     * portrait, which is 4.9% and 4.8% of the frame against the reference's own
+     * ~4.5%, and clamped either side so no viewport can draw a hairline or a wall.
+     * Deriving them from the wagon instead was tried and rejected — it made the
+     * track thin out as the round got longer, and the ground has no business
+     * changing when the stock standing on it does.
+     */
+    const wagonDrawH = (wagonSz * 76) / 100
+    const railH    = world
+      ? Math.min(10, Math.max(5, Math.round(trackHeight * 0.033)))
+      : Math.max(4, Math.round(trackHeight * 0.03))
+    const tieBand  = world
+      ? Math.min(26, Math.max(11, Math.round(trackHeight * 0.056)))
+      : Math.max(12, Math.round(trackHeight * 0.085))
+    const shoulder = world ? railH : Math.max(4, Math.round(trackHeight * 0.03))
+    const bedH       = railH + tieBand + railH
+    /** Ground left below the ballast shoulder, inside the band. */
+    const RAIL_FOOT = 10
+    const railTopWorld = Math.max(0, trackHeight - RAIL_FOOT - shoulder - bedH)
+    const railLowTop = railTopWorld + railH + tieBand
+
+    /**
+     * How the engine ends up standing on the same rail as a wagon.
+     *
+     * The engine's drawing is a 140x76 box and a wagon's is 100x76, so at their
+     * own widths the two are different HEIGHTS — and a row that centres each
+     * drawing vertically therefore puts their wheels at two different heights.
+     * Measured at 1024x768: the empty locomotive bay's bottom was at y=568 while
+     * the rail top was at y=578, so the bay the engine goes in hovered 9 px above
+     * the rails it is supposed to be a hole in, while the wagon bay beside it
+     * touched. Two bays at two heights on the same track is the "floating toy"
+     * read that round 1 was told to fix.
+     *
+     * Centring was the cause, so world mode stops centring: the row hangs its
+     * contents off its BOTTOM edge (`items-end`), which is the physical model
+     * anyway — things on a railway are level with each other because they are all
+     * standing on the same rail, not because they are the same height. `railPad`
+     * is then the single number that positions the whole train, worked out from
+     * the wagon, which is what the child counts and what the line is levelled to.
+     * Every drawing's wheels are at 71/76 of its own height, so bottom-alignment
+     * leaves a residual of `drawH * 5/76`, and the largest disagreement left
+     * between an engine and a wagon is 1.2 px at trackHeight 200 — against the
+     * 9 px measured. Classic keeps `items-center` and no padding, exactly as it
+     * was: its band has two rails and no single line to be level with.
+     */
+    const railPad = world
+      ? Math.max(
+          0,
+          Math.round(trackHeight - (railTopWorld + 3) - ITEM_PAD / 2 - (wagonDrawH * 5) / 76),
+        )
+      : 0
+
+    /**
+     * Where a PARKED wagon's box has to end so its wheels land on the same rail
+     * head a coupled wagon's wheels land on.
+     *
+     * The row is bottom-aligned, so every child's box bottom is level; but the
+     * residue of a wagon drawing below its own wheels is 5/76 of its drawn height,
+     * which is a different number of px for a 108 px wagon than for a 175 px one.
+     * Bottom-aligning the two without this put the small ones three px through the
+     * rail. Arithmetic, computed here because this is where the rail is.
+     */
+    const offerDrawH = (offerSz * 76) / 100
+    const offerBottomPad = Math.max(
+      0,
+      Math.round(ITEM_PAD / 2 + ((wagonDrawH - offerDrawH) * 5) / 76),
+    )
+    /* Out to the offer, once, whenever any of the three actually changes. */
+    const lastSent = useRef('')
+    useEffect(() => {
+      const key = `${wagonSz}|${offerSz}|${offerBottomPad}`
+      if (onSizes === undefined || lastSent.current === key) return
+      lastSent.current = key
+      onSizes({ coupled: wagonSz, offer: offerSz, bottomPad: offerBottomPad })
+    }, [onSizes, wagonSz, offerSz, offerBottomPad])
+
+    /**
+     * How far a bay drops into the track. Zero everywhere now, and it stays as a
+     * name rather than a literal because the classic bays still read it.
+     *
+     * World mode has no bays at all since round 4 — see the wagon bays in the train
+     * row for the measured gate failure that removed them — and classic presses its
+     * bays into flat ballast, where there is nothing to cut.
+     */
+    const bayDrop = 0
 
     /** The top of the rolling stock, which the counter must stay clear of. */
     const itemBoxH = Math.round((wagonSz * 76) / 100) + ITEM_PAD
-    const itemTop  = Math.max(0, Math.round((trackHeight - itemBoxH) / 2))
+    const itemTop  = Math.max(
+      0,
+      world
+        ? trackHeight - railPad - itemBoxH
+        : Math.round((trackHeight - itemBoxH) / 2),
+    )
     /**
      * The counter's size and where it stands.
      *
@@ -554,6 +1124,17 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
       !validation.wagonCountOk &&
       (validation.wagonTypeOk || hasNoWagons)
 
+    /**
+     * Which animal rides which wagon: the wagon's position in the rake, so a given
+     * wagon keeps its own passenger for as long as it is coupled and the three
+     * silhouettes alternate along the train instead of repeating.
+     */
+    const riderIndex = new Map<number, number>()
+    let riderN = 0
+    for (const item of trainItems) {
+      if (item.kind === 'wagon') riderIndex.set(item._key, riderN++)
+    }
+
     const activeOver = isOver && !isBlocked
     const blockedOver = isOver && isBlocked
 
@@ -565,44 +1146,122 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
         className="relative w-full transition-colors duration-200"
         style={{
           height: trackHeight,
-          background: activeOver
-            ? `linear-gradient(180deg, ${t.accent2}33, ${t.accent}55)`
-            : t.ground,
+          /* World: no fill of its own, ever. The ground under the rails is the
+             scene's field, and the band is transparent so the train stands on it
+             rather than in a strip laid across it. The one thing still painted
+             here is the drop feedback, and in world mode that is a flat white
+             veil rather than a two-stop gradient. */
+          background: world
+            ? activeOver
+              ? 'rgba(255,255,255,0.26)'
+              : 'transparent'
+            : activeOver
+              ? `linear-gradient(180deg, ${t.accent2}33, ${t.accent}55)`
+              : t.ground,
           boxShadow: activeOver
             ? `inset 0 0 0 4px ${t.accent}`
             : blockedOver
               ? `inset 0 0 0 4px ${t.bad}`
-              : 'inset 0 1px 0 rgba(0,0,0,0.08), inset 0 -1px 0 rgba(0,0,0,0.08)',
+              : world
+                ? 'none'
+                : 'inset 0 1px 0 rgba(0,0,0,0.08), inset 0 -1px 0 rgba(0,0,0,0.08)',
+          /* The three tones an empty bay is drawn in, chosen once, here. See
+             `slotVar` — the bay SVGs are shared and read these. */
+          ...(world
+            ? ({
+                '--slot-floor': w.slotFloor,
+                '--slot-shade': w.slotShade,
+                '--slot-lip': w.slotLip,
+              } as React.CSSProperties)
+            : null),
         }}
       >
-        {/* sleepers – pattern tiles at fixed pitch regardless of container width */}
+        {/* The permanent way.
+            Classic keeps exactly what it had: two grey-blue gradient rails with
+            its two ties filling the gap between them, across its own grey
+            ballast band.
+            World builds the assembly the reference builds, back to front — the
+            ballast bed and its shoulder, the ties on the bed, then both rails on
+            top of the ties. Nothing in it is lighter than the field it is laid
+            on, and it is 35 px tall at trackHeight 200. */}
+        {world && (
+          <>
+            <div
+              className="absolute inset-x-0"
+              style={{ top: railTopWorld, height: bedH, background: w.ballast }}
+            />
+            <div
+              className="absolute inset-x-0"
+              style={{ top: railTopWorld + bedH, height: shoulder, background: w.ballastDark }}
+            />
+          </>
+        )}
+
+        {/* sleepers – pattern tiles at fixed pitch regardless of container width. */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none">
           <defs>
-            <pattern id={patternId} x="0" y="0" width="72" height={trackHeight} patternUnits="userSpaceOnUse">
-              <rect x="4" y={slpY} width="28" height={slpH} rx="3" fill={t.tie} />
-              <rect x="40" y={slpY} width="28" height={slpH} rx="3" fill={t.tieDark} />
-            </pattern>
+            {world ? (
+              <pattern id={patternId} x="0" y="0" width="48" height={trackHeight} patternUnits="userSpaceOnUse">
+                <rect x="4" y={railTopWorld + railH} width={slpW} height={tieBand} fill={w.tie} />
+                <rect
+                  x="4"
+                  y={railTopWorld + railH + tieBand - 3}
+                  width={slpW}
+                  height={3}
+                  fill={w.tieDark}
+                />
+              </pattern>
+            ) : (
+              <pattern id={patternId} x="0" y="0" width="72" height={trackHeight} patternUnits="userSpaceOnUse">
+                <rect x="4" y={railOff + 4} width={slpW} height={trackHeight - railOff * 2 - 8} rx="3" fill={t.tie} />
+                <rect x="40" y={railOff + 4} width={slpW} height={trackHeight - railOff * 2 - 8} rx="3" fill={t.tieDark} />
+              </pattern>
+            )}
           </defs>
-          <rect width="100%" height="100%" fill={`url(#${patternId})`} opacity={activeOver ? 0.4 : 0.9} />
+          <rect
+            width="100%"
+            height="100%"
+            fill={`url(#${patternId})`}
+            opacity={activeOver ? 0.4 : world ? 1 : 0.9}
+          />
         </svg>
 
-        {/* rails */}
-        <div
-          className="absolute inset-x-0"
-          style={{
-            top: railOff, height: 6,
-            background: `linear-gradient(180deg, ${t.railHi}, ${t.rail})`,
-            boxShadow: '0 1px 0 rgba(0,0,0,0.2)',
-          }}
-        />
-        <div
-          className="absolute inset-x-0"
-          style={{
-            bottom: railOff, height: 6,
-            background: `linear-gradient(180deg, ${t.railHi}, ${t.rail})`,
-            boxShadow: '0 1px 0 rgba(0,0,0,0.2)',
-          }}
-        />
+        {/* The rails themselves: near-black, and in world mode there are two of
+            them, close together, with the ties between. The wheels sit on the
+            upper one — see `railTopWorld` — and the lower one closes the bed, which
+            is what makes the whole thing read as track rather than as one line
+            with things hanging off it. */}
+        {world ? (
+          <>
+            <div
+              className="absolute inset-x-0"
+              style={{ top: railTopWorld, height: railH, background: w.rail }}
+            />
+            <div
+              className="absolute inset-x-0"
+              style={{ top: railLowTop, height: railH, background: w.rail }}
+            />
+          </>
+        ) : (
+          <>
+            <div
+              className="absolute inset-x-0"
+              style={{
+                top: railOff, height: 6,
+                background: `linear-gradient(180deg, ${t.railHi}, ${t.rail})`,
+                boxShadow: '0 1px 0 rgba(0,0,0,0.2)',
+              }}
+            />
+            <div
+              className="absolute inset-x-0"
+              style={{
+                bottom: railOff, height: 6,
+                background: `linear-gradient(180deg, ${t.railHi}, ${t.rail})`,
+                boxShadow: '0 1px 0 rgba(0,0,0,0.2)',
+              }}
+            />
+          </>
+        )}
 
         {/* "The train is right." Fires once, on the frame the train first becomes
             exactly what the go button will accept, and is invisible at every other
@@ -624,9 +1283,24 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
         {/* Green as soon as the train is genuinely right, without being asked, and
             it stays green through the departure. Red for everything else — an
             unfinished train and a finished wrong one alike. */}
-        <Signal isGo={isRight || isDeparting} trackHeight={trackHeight} />
+        <Signal
+          isGo={isRight || isDeparting}
+          trackHeight={trackHeight}
+          unit={signalUnit}
+          world={world}
+        />
 
-        {/* How many are asked for, and how many are here. */}
+        {/* How many are asked for, and how many are here — and NOT in world mode.
+            Measured objection: the round's count was stated three times over on
+            one screen, as the numeral on the sign, as the dots under it, and as
+            this row of rings on the ground. The first two are one drawing read top
+            to bottom and they won their own round; this third one is the only one
+            of the three whose "filled versus outlined" reading is a pure
+            convention, and the reference has no counterpart to it anywhere. The
+            green plate behind it goes with it, which costs nothing: the signal
+            lamp beside the rails is this mode's one green, and it is the reference's
+            own device. */}
+        {!world && (
         <CountPips
           pipsRef={counterRef}
           target={targetCount}
@@ -639,6 +1313,7 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
           dimmed={isDeparting}
           isRight={isRight}
         />
+        )}
 
         {/* train row */}
         <div
@@ -646,23 +1321,62 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
           /* Gated by name: a landing item's animation bubbles through here too,
              and it must not cut short a rail-tap hop that is still running. */
           onAnimationEnd={(e) => {
-            if (e.animationName === 'ghost-jump') rowRef.current?.classList.remove('ghost-jump')
-            if (e.animationName === 'train-full') rowRef.current?.classList.remove('train-full')
+            if (e.animationName === 'ghost-jump') trainRef.current?.classList.remove('ghost-jump')
+            if (e.animationName === 'train-full') trainRef.current?.classList.remove('train-full')
           }}
-          className={`absolute inset-0 flex items-center gap-0 overflow-hidden ${
-            isDeparting ? 'train-depart' : ''
+          /* World: the train hangs off the LEFT of the line and the stock waiting
+             for it is pushed to the far end by `ml-auto`, so what the frame holds
+             is one railway with one line of things standing on it — train at the
+             near end, parked wagons at the far end, one rail under all of them.
+             E2 centred the train, which was right while it was alone on the line
+             and wrong the moment the choice came down onto it. */
+          /* `justify-end` in world mode, and it is what puts the bleed on the right
+             end of the line rather than the wrong one. The parked stock is pinned to
+             the far end of the rails, the train stands against it, and anything the
+             line cannot hold runs off the NEAR (left) edge — where the engine is, and
+             where the reference always cuts (frames-clean/frame-030 and -031,
+             blind/sago-trains-02 and -04). Round 1 justified this row to the start,
+             so a line that overflowed pushed the three things the child has to choose
+             between off the far edge instead. `overflow-hidden` is unchanged: nothing
+             can be scrolled to and there is nothing to scroll. */
+          className={`absolute inset-0 flex ${
+            world ? 'items-end justify-end' : 'items-center'
+          } gap-0 overflow-hidden ${
+            isDeparting && !world ? 'train-depart' : ''
           }`}
-          style={{ paddingLeft: padL, paddingRight: ROW_PAD_R }}
+          /* `paddingBottom` is what stands the whole train on the rail in world
+             mode — see `railPad`. Zero in classic, which centres instead. */
+          style={{ paddingLeft: padStart, paddingRight: ROW_PAD_R, paddingBottom: railPad }}
         >
+          {/* The train itself: engine, wagons, and in classic the bays. World mode
+              wraps it so the departure, the full-train squash and the rail-tap hop
+              belong to the TRAIN and not to the whole line — see `trainRef`. */}
+          <div
+            ref={trainRef}
+            className={`flex ${world ? 'items-end' : 'items-center'} gap-0 ${
+              isDeparting && world ? 'train-depart' : ''
+            }`}
+          >
           {/* The bay the engine goes in, while there is no engine — and while it is
               there it is the first empty slot in the row, so it is the one that
               breathes. The palette's engine cards breathe with it (see `locoSpot`
-              in DragPalette): "an engine, and it goes here". */}
-          {needLoco && (
+              in DragPalette): "an engine, and it goes here".
+
+              Classic only, and that is the failed `noTray` gate from round 3
+              rather than a tidy-up — see the wagon bays at the bottom of this row
+              for the measurement and the reasoning. World mode's engine is on the
+              rails from the first frame anyway (App's own layout effect), so this
+              bay was never anything but a flash of furniture. */}
+          {needLoco && !world && (
             <div
               data-slot-kind="loco"
               data-slot-next
               className="train-slot shrink-0 rounded-2xl p-1 flex items-center justify-center select-none pointer-events-none"
+              /* Into the track — see `bayDrop`. Offset with `top` and not with a
+                 transform, because this element already carries the `slot-wait`
+                 breathe and an animation on transform would simply overwrite an
+                 inline one. */
+              style={bayDrop ? { position: 'relative', top: bayDrop } : undefined}
             >
               <SlotLoco size={locoSz} />
             </div>
@@ -688,11 +1402,31 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
                       if (e.animationName === 'item-land') {
                         e.currentTarget.classList.remove('item-land')
                       }
+                      /* The "here is the load, and here is where it comes off"
+                         nod. Classic only since round 3: in world mode a wrong
+                         pick can no longer reach the rails, so the load standing
+                         there is never the thing that needs taking off. One shot,
+                         so it takes itself off again. */
+                      if (e.animationName === 'item-nudge') {
+                        e.currentTarget.classList.remove('item-nudge')
+                      }
                     }}
                     /* `transition` (not `transition-all`): visibility must flip
                        in the landing frame, never fade in a quarter-second late. */
-                    className={`relative shrink-0 rounded-2xl p-1 transition duration-150 touch-none select-none active:scale-90 cursor-pointer flex items-center justify-center ${
-                      hasError ? 'animate-bounce' : 'hover:bg-white/15'
+                    /* World mode carries no plate here, and that is the failed
+                       gate from the last round rather than a tidy-up. `rounded-2xl`
+                       plus the refusal's `background` painted a khaki rounded-
+                       rectangle card around the wagon on the grass — measured
+                       rgb(179,173,132) on grass rgb(142,201,126), 164x93 with a
+                       16 px radius, overlapping the bush behind it — so the one
+                       convention this mode exists to delete was how the game said
+                       "wrong", and it said it with a tray. The refusal is motion
+                       now, like every other refusal in the world: the wagon rocks.
+                       Classic keeps its plate, to the pixel. */
+                    className={`relative shrink-0 p-1 transition duration-150 touch-none select-none active:scale-90 cursor-pointer flex items-center justify-center ${
+                      world ? '' : 'rounded-2xl '
+                    }${
+                      hasError ? (world ? 'item-rock' : 'animate-bounce') : world ? '' : 'hover:bg-white/15'
                     }`}
                     style={{
                       /* Above the rake that rolls away when the child changes his
@@ -705,11 +1439,22 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
                          dropped slides out from under it. Only the shed ghosts sit
                          below this; an arriving wagon still flies over the top. */
                       zIndex: 1,
-                      ...(hasError ? { background: `${t.bad}72` } : null),
+                      ...(hasError && !world ? { background: `${t.bad}72` } : null),
                       ...(isPending ? { visibility: 'hidden' as const } : null),
                     }}
                   >
                     <Icon size={item.kind === 'loco' ? locoSz : wagonSz} />
+                    {/* Somebody is riding on it — see `Rider`. Only on the wagons:
+                        the engine already has a face of its own, and only once the
+                        wagon has actually landed, so the flying copy and the wagon
+                        under it stay the same drawing. */}
+                    {world && item.kind === 'wagon' && !isPending && (
+                      <WagonRider
+                        index={riderIndex.get(item._key) ?? 0}
+                        wagonSz={wagonSz}
+                        pad={ITEM_PAD / 2}
+                      />
+                    )}
                   </button>
                 )
               })}
@@ -717,17 +1462,70 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
               stand. The first of them breathes — "this one next" — unless the
               engine is still missing, in which case the engine's bay is the first
               empty slot in the row and only that one breathes. Exactly one
-              breathing hole at a time, ever. */}
-          {Array.from({ length: missing }).map((_, i) => (
+              breathing hole at a time, ever.
+
+              Classic only, and this is round 3's failed `noTray` gate. Measured in
+              world mode at 1024x768: a 272x206 rounded plate at (723,414) painting
+              "a grey-brown rounded lozenge with a lighter rounded rim inset into
+              the ballast", breathing, and two of them on a count-2 round. That is
+              the drop-target convention of the classic screen surviving into the
+              mode built to delete it — an empty plate that says "a wagon belongs
+              here" — and it stated the round's number a fourth time on top of the
+              numeral, the pips and the Czech speech. There is no placeholder
+              anywhere in the reference: the rails are simply empty until something
+              is standing on them, and what says "one more" is the signal beside
+              the line staying red and the wagons still waiting on the dock.
+
+              Nothing else needed changing for it. The size of the train is still
+              computed off `slotsWanted` (see `drawNeed`), so a count-2 round draws
+              its wagons at count-2 size from the first frame and nothing resizes
+              as they arrive; and the arriving wagon's flight still measures its
+              destination off `[data-pending]`, which is the wagon's own reserved
+              button and not a bay. */}
+          {!world && Array.from({ length: missing }).map((_, i) => (
             <div
               key={`slot-${i}`}
               data-slot-kind="wagon"
               {...(i === 0 && !needLoco ? { 'data-slot-next': '' } : null)}
               className="train-slot shrink-0 rounded-2xl p-1 flex items-center justify-center select-none pointer-events-none"
+              /* Into the track — see `bayDrop`. `top` and not a transform, because
+                 the leading bay carries the `slot-wait` breathe. */
+              style={bayDrop ? { position: 'relative', top: bayDrop } : undefined}
             >
               <SlotWagon size={wagonSz} />
             </div>
           ))}
+          </div>
+
+          {/* The stock waiting at the far end of the same line — E3, and the whole
+              of this round. `ml-auto` is what makes it the far end: the train grows
+              rightward out of the left of the frame and this stands where it is
+              going, so the picture is one railway rather than a shop above one.
+              Inside the row, so it is bottom-aligned on the same rail; see
+              `offerBottomPad`. */}
+          {world && offer !== null && (
+            /* A real gap between the rake and the stock parked in front of it: they
+               are two separate things standing on one line, and at `gap-0` the
+               nearest parked wagon read as coupled to the train. A fraction of the
+               wagon, so it scales with everything else. */
+            <div
+              className="shrink-0 flex items-end self-end"
+              style={{
+                marginLeft: Math.round(wagonSz * 0.1),
+                /* ...and off the far edge of the picture. The block is pinned to the
+                   end of the line and the line does not end where the frame does:
+                   this hangs the outer end of the last parked wagon outside it by
+                   `OFFER_TAIL_BLEED` of its width (plus the row's own right pad, which
+                   would otherwise hold it inside), so the rails read as going on.
+                   `overflow-hidden` on the row is what cuts it, and nothing can be
+                   scrolled to — the negative margin makes the content narrower, not
+                   wider. */
+                marginRight: -(Math.round(offerSz * OFFER_TAIL_BLEED) + ROW_PAD_R),
+              }}
+            >
+              {offer}
+            </div>
+          )}
         </div>
 
         {/* "Not that many." Taken out of the train row and stood at its far end:

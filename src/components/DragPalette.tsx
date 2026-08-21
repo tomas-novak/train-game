@@ -11,6 +11,19 @@ import { SKY } from '../theme'
 const t = SKY
 
 /**
+ * The classic screen's palette, and only the classic screen's — roadmap E2.
+ *
+ * E1 taught this file the world mode: the same nine cards with their plates not
+ * painted and a strip of track drawn under each row. That was the wrong shape and
+ * the whole-screen verdict said so — a palette with the plates switched off is
+ * still a palette, a tray of inventory laid over a picture. The world mode now has
+ * no tray at all (see `WorldChoice`), so every branch that knew about it has come
+ * back out of here and this component is exactly the control screen's palette
+ * again: nine cards, white plates, a rim, a divider, and not one line of it
+ * conditional on anything.
+ */
+
+/**
  * One immutable TrainItem per card, built once at module load. The cards are
  * memoised, and a fresh `{ kind, id }` literal on every render would defeat that
  * for no reason: the item a card stands for never changes.
@@ -576,8 +589,9 @@ export function DragPalette({ trainItems, task, maxWagons, onPress, popGo, canPl
    */
   const locoSpot = shownNeedLoco && locoAvail > 0
 
-  const locoDisplay = isTablet ? 120 : 86
-  const locoDrag    = isTablet ? 134 : 96
+  /* How big the offered vehicles are drawn, and how big the plate around them is. */
+  const locoDisplay  = isTablet ? 120 : 86
+  const locoDrag     = isTablet ? 134 : 96
   const wagonDisplay = isTablet ? 98 : 70
   const wagonDrag    = isTablet ? 112 : 80
   const cardMinW     = isTablet ? 130 : 92
@@ -585,7 +599,7 @@ export function DragPalette({ trainItems, task, maxWagons, onPress, popGo, canPl
 
   return (
     <div className="flex flex-col items-center gap-4">
-      {/* Locomotives row */}
+      {/* Locomotives row. */}
       <div ref={locoRowRef} className="flex gap-3 justify-center flex-wrap">
         {locos.map((loco, i) => {
           const available = locoAvailable[i]
@@ -607,14 +621,14 @@ export function DragPalette({ trainItems, task, maxWagons, onPress, popGo, canPl
         })}
       </div>
 
-      {/* Divider */}
+      {/* Divider between the two rows. */}
       <div className="flex items-center gap-2">
         <div className="h-px w-10" style={{ background: t.panelEdge }} />
         <div className="rounded-full" style={{ width: 6, height: 6, background: t.inkSoft, opacity: 0.5 }} />
         <div className="h-px w-10" style={{ background: t.panelEdge }} />
       </div>
 
-      {/* Wagons row */}
+      {/* Wagons row. */}
       <div
         ref={wagonRowRef}
         /* The row nod is a one-shot: it comes off when it ends, so the next refusal

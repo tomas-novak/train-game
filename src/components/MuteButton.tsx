@@ -1,5 +1,5 @@
 import { useRef, type FC } from 'react'
-import { SKY } from '../theme'
+import { SKY, WORLD } from '../theme'
 
 const t = SKY
 
@@ -28,9 +28,21 @@ interface Props {
   /** This device has no Czech voice: effects work, speech does not. */
   speechOff?: boolean
   isTablet?: boolean
+  /**
+   * World mode: the switch hangs from the top edge of the frame instead of
+   * floating in the sky. Nothing else about it changes — same disc, same
+   * diameter, same hit box, same three states — see `.sign-strap` in index.css.
+   */
+  world?: boolean
 }
 
-export const MuteButton: FC<Props> = ({ muted, onToggle, speechOff = false, isTablet = false }) => {
+export const MuteButton: FC<Props> = ({
+  muted,
+  onToggle,
+  speechOff = false,
+  isTablet = false,
+  world = false,
+}) => {
   const ref = useRef<HTMLButtonElement>(null)
   // Never below the 64 px touch floor, at either orientation.
   const size = isTablet ? 88 : 72
@@ -48,6 +60,14 @@ export const MuteButton: FC<Props> = ({ muted, onToggle, speechOff = false, isTa
    */
   const waveFill = warnVoice ? AMBER : t.inkSoft
 
+  /**
+   * The muted glyph's ink. Classic paints the whole disc red and the speaker
+   * white on top of it; world mode has no disc to paint, so the cross and the cone
+   * are drawn in the scene's own darkest ink instead — white on apricot sky is
+   * invisible, and this switch has to read in both states.
+   */
+  const mutedInk = world ? WORLD.cubInk : '#ffffff'
+
   const handlePointerDown = () => {
     // Same frame as the finger: the squash starts before the icon has swapped,
     // so a mute (which makes the game silent) still answers instantly.
@@ -61,6 +81,10 @@ export const MuteButton: FC<Props> = ({ muted, onToggle, speechOff = false, isTa
   }
 
   return (
+    <span className="relative flex shrink-0">
+    {/* No strap in world mode any more, and no plate under it either: this is the
+        parent's switch, not a sign in the place, so what is left is the glyph. See
+        `.world-chrome` in index.css. */}
     <button
       ref={ref}
       data-touchable
@@ -68,7 +92,9 @@ export const MuteButton: FC<Props> = ({ muted, onToggle, speechOff = false, isTa
       type="button"
       onPointerDown={handlePointerDown}
       onAnimationEnd={() => ref.current?.classList.remove('mute-poke')}
-      className="relative rounded-full flex items-center justify-center touch-none select-none shrink-0"
+      className={`${
+        world ? 'world-chrome' : 'world-plate'
+      } relative rounded-full flex items-center justify-center touch-none select-none shrink-0`}
       style={{
         width: size,
         height: size,
@@ -88,7 +114,7 @@ export const MuteButton: FC<Props> = ({ muted, onToggle, speechOff = false, isTa
         {/* the speaker cone: one flat shape, Sago-style, no strokes or gradients */}
         <path
           d="M6 12 h5 L18 6 v20 l-7-6 H6 z"
-          fill={muted ? '#ffffff' : t.ink}
+          fill={muted ? mutedInk : t.ink}
         />
         {muted ? (
           /* one thick bar, corner to corner: the universal "off" */
@@ -98,7 +124,7 @@ export const MuteButton: FC<Props> = ({ muted, onToggle, speechOff = false, isTa
             width="31"
             height="3.8"
             rx="1.9"
-            fill="#ffffff"
+            fill={mutedInk}
             transform="rotate(-45 16 16)"
           />
         ) : (
@@ -128,5 +154,6 @@ export const MuteButton: FC<Props> = ({ muted, onToggle, speechOff = false, isTa
         </span>
       )}
     </button>
+    </span>
   )
 }

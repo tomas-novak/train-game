@@ -1,8 +1,41 @@
 import { useId } from 'react'
 import type { FC } from 'react'
 import type { TrainIcon } from '../types'
-import { SKY } from '../theme'
+import { SKY, WORLD_STOCK } from '../theme'
 import type { SkyTheme } from '../theme'
+import { readMode } from '../utils/mode'
+
+/**
+ * Which set of paints these drawings use when nobody hands them one.
+ *
+ * Every component in this file already took an optional theme (`t`) and fell
+ * back to `SKY`; nothing in the app has ever passed one, so `SKY` was the train.
+ * The screen the train stands in is now one of two, decided once from the URL, so
+ * the fallback is decided the same way and in the same place: pastel stock on the
+ * classic pale-grey screen, saturated stock on the world's green field. See
+ * `WORLD_STOCK` in theme.ts for why the world needs its own — round 1's train
+ * measured quieter than the field it stood in, and the gate says it must be the
+ * loudest thing in the frame.
+ *
+ * Read at module load, exactly like the mode itself: a mode change is a reload,
+ * so no component here has to be able to switch paints while it is running, and
+ * the palette card, the flying copy and the wagon on the rails are guaranteed to
+ * be the same drawing in the same colours because they are the same component
+ * reading the same constant.
+ */
+const BASE = readMode() === 'world' ? (WORLD_STOCK as unknown as SkyTheme) : SKY
+
+/**
+ * Whether the rolling stock casts anything: 1 in classic, 0 in the world.
+ *
+ * The reference has no drop shadow anywhere, in any frame, and roadmap E1 bans
+ * them. The scene has none. The train had two — a soft ellipse under the
+ * footplate and a dark smudge under every wheel, both measurable at 3.4x — and
+ * they were on the one object the frame is now built around. So in world mode
+ * their alpha is multiplied out to nothing. Read at module load exactly like
+ * `BASE`, because a mode change is a reload.
+ */
+const CAST = readMode() === 'world' ? 0 : 1
 
 // ── shared atoms ──────────────────────────────────────────────────────────────
 
@@ -10,7 +43,7 @@ const Wheel: FC<{ cx: number; cy: number; r?: number; wheel: string; wheelHub: s
   cx, cy, r = 8, wheel, wheelHub,
 }) => (
   <g>
-    <circle cx={cx} cy={cy + 1.2} r={r} fill="rgba(0,0,0,0.18)" />
+    <circle cx={cx} cy={cy + 1.2} r={r} fill={`rgba(0,0,0,${0.18 * CAST})`} />
     <circle cx={cx} cy={cy} r={r} fill={wheel} />
     <circle cx={cx} cy={cy - r * 0.25} r={r * 0.55} fill="rgba(255,255,255,0.12)" />
     <circle cx={cx} cy={cy} r={r * 0.35} fill={wheelHub} />
@@ -21,15 +54,56 @@ const Wheel: FC<{ cx: number; cy: number; r?: number; wheel: string; wheelHub: s
 const GroundShadow: FC<{ y?: number; w?: number; opacity?: number }> = ({
   y = 64, w = 110, opacity = 0.18,
 }) => (
-  <ellipse cx={w / 2} cy={y} rx={w * 0.42} ry={2.5} fill={`rgba(0,0,0,${opacity})`} />
+  <ellipse cx={w / 2} cy={y} rx={w * 0.42} ry={2.5} fill={`rgba(0,0,0,${opacity * CAST})`} />
 )
+
+/**
+ * The engine's face — world mode only, and roadmap E2 asked for it by name.
+ *
+ * "There is no face anywhere" was a third of the whole-screen verdict, and the
+ * reason it matters is not decoration: every payload and every driver in the
+ * reference is a specific creature with two eyes and a smile
+ * (blind/sago-trains-01 has a bird driving, -04 a cow, a skunk, a robot and a
+ * rabbit riding, frames-clean/frame-095 four animals on the ledge), and that is
+ * what a four-year-old looks at and wants. Our locomotive was a machine with a
+ * lamp on it.
+ *
+ * Two flat ink eyes with one highlight each, and for the engine with room for it a
+ * smile. No stroke around anything, no gradient, no shadow: the same rules the
+ * rest of the world scene is built to. It is drawn inside each engine's mirrored
+ * group, so only mirror-safe shapes are used — the pair is symmetric about `cx`
+ * and the highlights simply come out on the other side of each eye, which is still
+ * a highlight.
+ *
+ * Classic renders nothing at all here: the control screen's train is the drawing
+ * that won its own round and is not touched.
+ */
+const FACE = readMode() === 'world'
+const FACE_INK = '#2c1a0d'
+
+const Face: FC<{ cx: number; cy: number; gap: number; r: number; smile?: string }> = ({
+  cx, cy, gap, r, smile,
+}) => {
+  if (!FACE) return null
+  return (
+    <g>
+      <circle cx={cx - gap / 2} cy={cy} r={r} fill={FACE_INK} />
+      <circle cx={cx + gap / 2} cy={cy} r={r} fill={FACE_INK} />
+      <circle cx={cx - gap / 2 + r * 0.32} cy={cy - r * 0.34} r={r * 0.32} fill="#ffffff" />
+      <circle cx={cx + gap / 2 + r * 0.32} cy={cy - r * 0.34} r={r * 0.32} fill="#ffffff" />
+      {smile !== undefined && (
+        <path d={smile} fill="none" stroke={FACE_INK} strokeWidth={2.4} strokeLinecap="round" />
+      )}
+    </g>
+  )
+}
 
 // ── LOCOMOTIVES ───────────────────────────────────────────────────────────────
 
 export const SteamLoco: FC<TrainIcon> = ({ size = 100, t }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const s = (t ?? SKY).steam as SkyTheme['steam']
+  const s = (t ?? BASE).steam as SkyTheme['steam']
   return (
     <svg viewBox="0 0 140 76" width={size} height={(size * 76) / 140} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -69,6 +143,9 @@ export const SteamLoco: FC<TrainIcon> = ({ size = 100, t }) => {
         <Wheel cx={82} cy={64} r={10} wheel={s.wheel} wheelHub={s.wheelHub} />
         <Wheel cx={108} cy={64} r={7} wheel={s.wheel} wheelHub={s.wheelHub} />
         <rect x="22" y="62" width="92" height="3.5" rx="1.5" fill={s.plate} opacity={0.7} />
+        {/* The smokebox door is already a round face plate at the front of the
+            engine, so the face goes on it and needs nothing added to carry it. */}
+        <Face cx={112} cy={40} gap={13} r={4.4} smile="M105,49 Q112,55 119,49" />
       </g>
     </svg>
   )
@@ -77,7 +154,7 @@ export const SteamLoco: FC<TrainIcon> = ({ size = 100, t }) => {
 export const ElectricLoco: FC<TrainIcon> = ({ size = 100, t }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const s = (t ?? SKY).electric as SkyTheme['electric']
+  const s = (t ?? BASE).electric as SkyTheme['electric']
   return (
     <svg viewBox="0 0 140 76" width={size} height={(size * 76) / 140} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -113,6 +190,9 @@ export const ElectricLoco: FC<TrainIcon> = ({ size = 100, t }) => {
         <rect x="92" y="56" width="32" height="4" rx="2" fill={s.windowFrame} opacity={0.5} />
         <Wheel cx={100} cy={64} r={7} wheel={s.wheel} wheelHub={s.bodyHi} />
         <Wheel cx={116} cy={64} r={7} wheel={s.wheel} wheelHub={s.bodyHi} />
+        {/* Behind the cab glass, which is where a face belongs on an engine with
+            no smokebox door to put one on. */}
+        <Face cx={120} cy={30} gap={7} r={2.9} />
       </g>
     </svg>
   )
@@ -121,7 +201,7 @@ export const ElectricLoco: FC<TrainIcon> = ({ size = 100, t }) => {
 export const DieselLoco: FC<TrainIcon> = ({ size = 100, t }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const s = (t ?? SKY).diesel as SkyTheme['diesel']
+  const s = (t ?? BASE).diesel as SkyTheme['diesel']
   return (
     <svg viewBox="0 0 140 76" width={size} height={(size * 76) / 140} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -157,6 +237,9 @@ export const DieselLoco: FC<TrainIcon> = ({ size = 100, t }) => {
         <rect x="88" y="56" width="34" height="4" rx="2" fill={s.grille} opacity={0.6} />
         <Wheel cx={96} cy={64} r={8} wheel={s.wheel} wheelHub={s.bodyHi} />
         <Wheel cx={114} cy={64} r={8} wheel={s.wheel} wheelHub={s.bodyHi} />
+        {/* On the nose, above the headlamp — which then reads as the nose of the
+            face rather than as a fitting, and no smile is needed to say so. */}
+        <Face cx={122} cy={31} gap={9} r={3.4} />
       </g>
     </svg>
   )
@@ -391,7 +474,7 @@ function peopleLoad(s: SkyTheme['people']) {
 export const HopperWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const sky = t ?? SKY
+  const sky = t ?? BASE
   const s = sky.hopper as SkyTheme['hopper']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -427,7 +510,7 @@ export const HopperWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
 export const TankWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const sky = t ?? SKY
+  const sky = t ?? BASE
   const s = sky.tank as SkyTheme['tank']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -519,7 +602,7 @@ export const TankWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
 export const BoxWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const sky = t ?? SKY
+  const sky = t ?? BASE
   const s = sky.box as SkyTheme['box']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -573,7 +656,7 @@ export const BoxWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
 export const FlatcarWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const sky = t ?? SKY
+  const sky = t ?? BASE
   const s = sky.flatcar as SkyTheme['flatcar']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -606,7 +689,7 @@ export const FlatcarWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
 export const PassengerWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const sky = t ?? SKY
+  const sky = t ?? BASE
   const s = sky.passenger as SkyTheme['passenger']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -648,7 +731,7 @@ export const PassengerWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
 export const LogcarWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const sky = t ?? SKY
+  const sky = t ?? BASE
   const s = sky.logcar as SkyTheme['logcar']
   return (
     <svg viewBox="0 0 100 76" width={size} height={(size * 76) / 100} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
@@ -681,10 +764,10 @@ export const LogcarWagon: FC<TrainIcon> = ({ size = 80, t, showCargo }) => {
 // ── CARGO ICONS ───────────────────────────────────────────────────────────────
 
 export const CoalCargo: FC<TrainIcon> = ({ size = 56, t }) => {
-  const s = (t ?? SKY).coal as SkyTheme['coal']
+  const s = (t ?? BASE).coal as SkyTheme['coal']
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="30" cy="54" rx="22" ry="3" fill="rgba(0,0,0,0.15)" />
+      <ellipse cx="30" cy="54" rx="22" ry="3" fill={`rgba(0,0,0,${0.15 * CAST})`} />
       <polygon points="6,50 4,36 14,22 28,26 30,42 18,52" fill={s.b} />
       <polygon points="22,52 18,33 36,18 50,24 54,42 42,52" fill={s.a} />
       <polygon points="12,52 8,40 18,30 32,34 32,46 22,54" fill={s.c} opacity={0.85} />
@@ -695,10 +778,10 @@ export const CoalCargo: FC<TrainIcon> = ({ size = 56, t }) => {
 }
 
 export const SandCargo: FC<TrainIcon> = ({ size = 56, t }) => {
-  const s = (t ?? SKY).sand as SkyTheme['sand']
+  const s = (t ?? BASE).sand as SkyTheme['sand']
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="30" cy="54" rx="24" ry="3" fill="rgba(0,0,0,0.15)" />
+      <ellipse cx="30" cy="54" rx="24" ry="3" fill={`rgba(0,0,0,${0.15 * CAST})`} />
       <path d="M4,54 Q10,28 30,14 Q50,28 56,54 Z" fill={s.b} />
       <path d="M4,54 Q10,28 30,14 Q40,30 30,54 Z" fill={s.a} />
       <path d="M16,50 Q22,28 30,18 Q34,30 30,50 Z" fill={s.hi} opacity={0.5} />
@@ -717,7 +800,7 @@ export const SandCargo: FC<TrainIcon> = ({ size = 56, t }) => {
  * makes with no instruction at all, and it is the whole reason the loads exist.
  */
 export const MilkCargo: FC<TrainIcon> = ({ size = 56, t }) => {
-  const s = (t ?? SKY).milk as SkyTheme['milk']
+  const s = (t ?? BASE).milk as SkyTheme['milk']
   const bottle = (w: number, sy: number, nw: number, topY: number) => (cx: number) =>
     `M${cx - w},52 L${cx - w},${sy} Q${cx - w},${sy - 11} ${cx - nw},${sy - 12.4} L${cx - nw},${topY} L${cx + nw},${topY} L${cx + nw},${sy - 12.4} Q${cx + w},${sy - 11} ${cx + w},${sy} L${cx + w},52 Z`
   const rim = bottle(8.4, 26, 5.2, 5)
@@ -742,10 +825,10 @@ export const MilkCargo: FC<TrainIcon> = ({ size = 56, t }) => {
 }
 
 export const FuelCargo: FC<TrainIcon> = ({ size = 56, t }) => {
-  const s = (t ?? SKY).fuel as SkyTheme['fuel']
+  const s = (t ?? BASE).fuel as SkyTheme['fuel']
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="30" cy="56" rx="20" ry="2.5" fill="rgba(0,0,0,0.18)" />
+      <ellipse cx="30" cy="56" rx="20" ry="2.5" fill={`rgba(0,0,0,${0.18 * CAST})`} />
       <rect x="17" y="4" width="26" height="5" rx="2.5" fill={s.canDark} />
       <rect x="17" y="7" width="6" height="8" fill={s.canDark} />
       <rect x="37" y="7" width="6" height="8" fill={s.canDark} />
@@ -761,10 +844,10 @@ export const FuelCargo: FC<TrainIcon> = ({ size = 56, t }) => {
 }
 
 export const ApplesCargo: FC<TrainIcon> = ({ size = 56, t }) => {
-  const s = (t ?? SKY).apples as SkyTheme['apples']
+  const s = (t ?? BASE).apples as SkyTheme['apples']
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="30" cy="57" rx="22" ry="2.5" fill="rgba(0,0,0,0.18)" />
+      <ellipse cx="30" cy="57" rx="22" ry="2.5" fill={`rgba(0,0,0,${0.18 * CAST})`} />
       <circle cx="43.5" cy="24" r="11.2" fill={s.greenDark} />
       <circle cx="43.5" cy="24" r="8.9" fill={s.green} />
       <ellipse cx="40.2" cy="20.6" rx="3" ry="2.8" fill="#fff" opacity={0.4} />
@@ -783,10 +866,10 @@ export const ApplesCargo: FC<TrainIcon> = ({ size = 56, t }) => {
 }
 
 export const ParcelsCargo: FC<TrainIcon> = ({ size = 56, t }) => {
-  const s = (t ?? SKY).parcels as SkyTheme['parcels']
+  const s = (t ?? BASE).parcels as SkyTheme['parcels']
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="30" cy="57" rx="22" ry="2.5" fill="rgba(0,0,0,0.18)" />
+      <ellipse cx="30" cy="57" rx="22" ry="2.5" fill={`rgba(0,0,0,${0.18 * CAST})`} />
       <ellipse cx="20.5" cy="12" rx="9.4" ry="6.4" fill={s.ribbon} transform="rotate(-18 20.5 12)" />
       <ellipse cx="39.5" cy="12" rx="9.4" ry="6.4" fill={s.ribbon} transform="rotate(18 39.5 12)" />
       <ellipse cx="20.5" cy="12" rx="3.8" ry="2.6" fill={s.ribbonDark} opacity={0.5} transform="rotate(-18 20.5 12)" />
@@ -805,7 +888,7 @@ export const ParcelsCargo: FC<TrainIcon> = ({ size = 56, t }) => {
 export const CarsCargo: FC<TrainIcon> = ({ size = 56, t }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
-  const s = (t ?? SKY).cars as SkyTheme['cars']
+  const s = (t ?? BASE).cars as SkyTheme['cars']
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -814,7 +897,7 @@ export const CarsCargo: FC<TrainIcon> = ({ size = 56, t }) => {
           <stop offset="1" stopColor={s.bodyDark} />
         </linearGradient>
       </defs>
-      <ellipse cx="30" cy="54" rx="24" ry="2.5" fill="rgba(0,0,0,0.18)" />
+      <ellipse cx="30" cy="54" rx="24" ry="2.5" fill={`rgba(0,0,0,${0.18 * CAST})`} />
       <rect x="3" y="32" width="54" height="16" rx="5" fill={`url(#c${id})`} />
       <path d="M12,32 Q16,16 24,14 L38,14 Q46,16 50,32 Z" fill={s.bodyDark} />
       <path d="M16,32 Q19,20 24,18 L30,18 L30,32 Z" fill={s.window} opacity={0.9} />
@@ -831,10 +914,10 @@ export const CarsCargo: FC<TrainIcon> = ({ size = 56, t }) => {
 }
 
 export const PeopleCargo: FC<TrainIcon> = ({ size = 56, t }) => {
-  const s = (t ?? SKY).people as SkyTheme['people']
+  const s = (t ?? BASE).people as SkyTheme['people']
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="30" cy="56" rx="22" ry="2.5" fill="rgba(0,0,0,0.18)" />
+      <ellipse cx="30" cy="56" rx="22" ry="2.5" fill={`rgba(0,0,0,${0.18 * CAST})`} />
       <path d="M30,54 Q31,38 41,34 Q51,38 52,54 Z" fill={s.shirtB} />
       <circle cx="41" cy="22" r="9" fill={s.skinB} />
       <path d="M32,17 Q33,12 41,11 Q49,12 50,18 Q49,15 41,14 Q33,15 32,17 Z" fill={s.hair} />
@@ -876,14 +959,110 @@ function LogShape({ cx, cy, w, h, outer, mid, inner, crack }: LogShapeProps) {
 }
 
 export const LogsCargo: FC<TrainIcon> = ({ size = 56, t }) => {
-  const s = (t ?? SKY).logs as SkyTheme['logs']
+  const s = (t ?? BASE).logs as SkyTheme['logs']
   const p = { outer: s.outer, mid: s.mid, inner: s.inner, crack: s.crack }
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="30" cy="55" rx="24" ry="2.5" fill="rgba(0,0,0,0.18)" />
+      <ellipse cx="30" cy="55" rx="24" ry="2.5" fill={`rgba(0,0,0,${0.18 * CAST})`} />
       <LogShape cx={36} cy={20} w={36} h={14} {...p} />
       <LogShape cx={28} cy={26} w={46} h={15} {...p} />
       <LogShape cx={32} cy={42} w={50} h={16} {...p} />
     </svg>
   )
 }
+
+/**
+ * A small animal — roadmap E3, world mode only.
+ *
+ * This is the drawing that used to be `Friend` in WorldChoice, where three of
+ * them stood full-size BESIDE the three offered wagons. Measured, that was a
+ * large part of why the offer outweighed the train: the offered band carried 56%
+ * object ink against the train's 16.9%, and a third of the offer's ink was three
+ * chaperones that had nothing to do with the choice being made.
+ *
+ * So it moved, and it moved to the two places the reference puts its characters:
+ * standing ON the wagons of the train being built (frames-clean/frame-030 stands
+ * a rabbit on the leading wagon's roof, frame-040 a rabbit and a sloth on two of
+ * them) and standing on the station platform waiting to board (frame-030 and
+ * frame-042 both line the platform with them). Every one of them is now either on
+ * the child's own train — which is what makes a Sago train worth looking at — or
+ * small and far away up at the station.
+ *
+ * One 92x124 box, three silhouettes, and what separates them is the head and one
+ * raised arm: a piglet with folded ears, a snout and two nostrils; a duckling with
+ * a wedge beak and a crest; a bunny with two long uprights and lined ears. Every
+ * fill is flat, the smile is the only stroke, nothing casts and nothing has a
+ * gradient.
+ */
+export interface CritterSpec {
+  kind: 'piglet' | 'duckling' | 'bunny'
+  coat: string
+  dark: string
+  inner: string
+  /** The face ink, and the duckling's beak. Passed in so this file owns no palette. */
+  ink: string
+  beak: string
+}
+
+export const Critter: FC<{ spec: CritterSpec; width: number; height: number }> = ({
+  spec,
+  width,
+  height,
+}) => (
+  <svg
+    viewBox="0 0 92 124"
+    width={width}
+    height={height}
+    style={{ display: 'block' }}
+    aria-hidden="true"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    {/* body: a low round-shouldered mass, feet flat on whatever it stands on */}
+    <path d="M22,72 Q46,60 70,72 L73,120 Q46,128 19,120 Z" fill={spec.coat} />
+    {/* the raised arm, on the free side of the box so it is not buried under the
+        body the way the old one was — measured invisible at this size */}
+    <path d="M64,84 Q82,72 78,50 L65,54 Q68,70 56,80 Z" fill={spec.dark} />
+    <circle cx="79" cy="47" r="9" fill={spec.dark} />
+    {/* what is on top of the head, then the head over its feet */}
+    {spec.kind === 'piglet' && (
+      <>
+        <path d="M22,32 Q17,10 36,17 Z" fill={spec.dark} />
+        <path d="M70,32 Q75,10 56,17 Z" fill={spec.dark} />
+      </>
+    )}
+    {spec.kind === 'bunny' && (
+      <>
+        <rect x="27" y="0" width="14" height="36" rx="7" fill={spec.coat} />
+        <rect x="51" y="0" width="14" height="36" rx="7" fill={spec.coat} />
+        <rect x="30.5" y="5" width="7" height="25" rx="3.5" fill={spec.inner} />
+        <rect x="54.5" y="5" width="7" height="25" rx="3.5" fill={spec.inner} />
+      </>
+    )}
+    {spec.kind === 'duckling' && <path d="M46,4 Q34,6 40,20 L52,18 Z" fill={spec.dark} />}
+    <circle cx="46" cy="44" r="26" fill={spec.coat} />
+    {spec.kind === 'piglet' && <ellipse cx="46" cy="56" rx="14" ry="10.5" fill={spec.inner} />}
+    {/* The duckling's beak goes on the FRONT of the face, under the eyes, and not
+        off the side of the head: at this size a beak on the silhouette's edge
+        measured as a stray pixel and the animal read as a yellow blob. */}
+    {spec.kind === 'duckling' && <path d="M33,50 L59,50 L46,64 Z" fill={spec.beak} />}
+    {spec.kind === 'bunny' && <ellipse cx="46" cy="57" rx="10.5" ry="7" fill={spec.inner} />}
+    {/* the face: two eyes, and either a smile or the piglet's two nostrils */}
+    <circle cx="36" cy="41" r="4.6" fill={spec.ink} />
+    <circle cx="56" cy="41" r="4.6" fill={spec.ink} />
+    {spec.kind === 'piglet' && (
+      <>
+        <circle cx="42" cy="56" r="2.6" fill={spec.ink} />
+        <circle cx="50" cy="56" r="2.6" fill={spec.ink} />
+      </>
+    )}
+    {spec.kind === 'bunny' && (
+      <path
+        d="M38,58 Q46,66 54,58"
+        fill="none"
+        stroke={spec.ink}
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    )}
+  </svg>
+)

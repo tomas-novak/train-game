@@ -1,10 +1,30 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type { Task, GameProgress, ValidationResult, TrainItem, KeyedTrainItem, WagonType } from '../types'
 import { LEVELS, CORRECT_PER_LEVEL } from '../data/levels'
-import { validateTrain } from '../utils/validation'
+import { pickWanted, validateTrain } from '../utils/validation'
 import { generateTask } from '../utils/random'
 import { canAddToTrain, placedLoco, placedWagons, trainTap } from '../utils/train'
 import type { TrainTap } from '../utils/train'
+import { readMode } from '../utils/mode'
+
+/**
+ * May a wagon of a different load sweep the coupled load off the rails?
+ *
+ * Only on the classic screen. In world mode a wrong pick is refused outright and
+ * the rake is left standing — see `trainTap`, which carries the measured reason.
+ * Read once, at module load, because the mode is a property of the URL and a mode
+ * change is a reload.
+ */
+const IS_WORLD = readMode() === 'world'
+const ALLOW_REPLACE = !IS_WORLD
+/**
+ * Does the PICK itself decide, or only the finished train?
+ *
+ * World mode: the pick decides, in the frame of the touch — see `pickWanted` in
+ * utils/validation.ts for the measurement that forced it. Classic: only the
+ * finished train, exactly as section A shipped it.
+ */
+const GATE_PICK = IS_WORLD
 
 const STORAGE_KEY = 'trainGameProgress.sky'
 // Key intentionally versioned with ".sky" to reset progress when the Sky theme
@@ -175,6 +195,14 @@ export function useGameState(): GameState {
    */
   const maxWagons = task.count
 
+  /**
+   * The one wagon type this round will take, or null when the choice is not
+   * gated. Every decision below reads it, so "will this pick be taken" is one
+   * answer given in one place and the wagon that rocks back down on the dock and
+   * the wagon that couples on cannot disagree.
+   */
+  const wantType = pickWanted(task, GATE_PICK)
+
   /** The only writer of the train: keeps the ref and the state in lockstep. */
   const applyTrain = useCallback((next: KeyedTrainItem[]) => {
     trainRef.current = next
@@ -195,15 +223,15 @@ export function useGameState(): GameState {
    */
   const canAdd = useCallback(
     (item: TrainItem) =>
-      roundIsOpen() && canAddToTrain(trainRef.current, item, maxWagons),
-    [maxWagons, roundIsOpen],
+      roundIsOpen() && canAddToTrain(trainRef.current, item, maxWagons, ALLOW_REPLACE, wantType),
+    [maxWagons, roundIsOpen, wantType],
   )
 
   const liveTrain = useCallback(() => trainRef.current, [])
 
   const tapKind = useCallback(
-    (item: TrainItem) => trainTap(trainRef.current, item, maxWagons),
-    [maxWagons],
+    (item: TrainItem) => trainTap(trainRef.current, item, maxWagons, ALLOW_REPLACE, wantType),
+    [maxWagons, wantType],
   )
 
   /**
@@ -223,7 +251,7 @@ export function useGameState(): GameState {
       // and still be awarded the round by the phase timer.
       if (!roundIsOpen()) return null
       const prev = trainRef.current
-      const kind = trainTap(prev, item, maxWagons)
+      const kind = trainTap(prev, item, maxWagons, ALLOW_REPLACE, wantType)
       if (kind === 'refuse') return null
       const keyed = { ...item, _key: keyCounter.current++ } as KeyedTrainItem
       let replaced: number[] = []
@@ -241,7 +269,7 @@ export function useGameState(): GameState {
       setValidation(null)
       return { key: keyed._key, replaced }
     },
-    [applyTrain, maxWagons, roundIsOpen, setPhase],
+    [applyTrain, maxWagons, roundIsOpen, setPhase, wantType],
   )
 
   const removeFromTrain = useCallback((key: number) => {
