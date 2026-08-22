@@ -91,6 +91,8 @@ export interface GameState {
    * looks right" and "it is accepted" cannot come apart.
    */
   isRight: boolean
+  /** `isRight`, ignoring one key: the wagon that is accepted but still in flight. */
+  isRightExcluding: (hiddenKey: number | null) => boolean
   shakeKey: number
   /** Increments on every accepted wagon placement, replacements included. */
   placeSeq: number
@@ -273,10 +275,16 @@ export function useGameState(): GameState {
   )
 
   const removeFromTrain = useCallback((key: number) => {
+    // The same invariant `addToTrain` carries, and for the same reason: the train
+    // items stay tappable while the train departs and while the cheer plays, so
+    // without this a tap on the engine mid-cheer deleted it, flipped the signal
+    // back to red, and — because the world mode's auto-locomotive is phase-gated —
+    // the engine never came back.
+    if (!roundIsOpen()) return
     applyTrain(trainRef.current.filter((t) => t._key !== key))
     setPhase((p) => (p === 'wrong' ? 'playing' : p))
     setValidation(null)
-  }, [applyTrain, setPhase])
+  }, [applyTrain, roundIsOpen, setPhase])
 
   const submit = useCallback(() => {
     const loco = trainItems.find((t) => t.kind === 'loco') as
@@ -359,15 +367,29 @@ export function useGameState(): GameState {
    * and paint must agree with the train the child can actually see. The ref is for
    * decisions taken inside a pointer event, before React has re-rendered.
    */
-  const isRight = (() => {
-    const wagons = placedWagons(trainItems)
-    return validateTrain(
-      task,
-      placedLoco(trainItems)?.id ?? null,
-      wagons[0]?.type ?? null,
-      wagons.length,
-    ).allCorrect
-  })()
+  const isRightExcluding = useCallback(
+    (hiddenKey: number | null) => {
+      const visible = hiddenKey === null
+        ? trainItems
+        : trainItems.filter((t) => t._key !== hiddenKey)
+      const wagons = placedWagons(visible)
+      return validateTrain(
+        task,
+        placedLoco(visible)?.id ?? null,
+        wagons[0]?.type ?? null,
+        wagons.length,
+      ).allCorrect
+    },
+    [task, trainItems],
+  )
+  /**
+   * Correct as the child can SEE it. A wagon that has been accepted but is still
+   * flying is in `trainItems` and hidden on the rails, so counting it turned the
+   * signal green, fired the track wash and closed the counter for the whole 340 ms
+   * of the flight, while the last pip was still an open ring and the rails still
+   * showed a gap. The green may not arrive before the wagon does.
+   */
+  const isRight = isRightExcluding(null)
 
   /**
    * The same question asked of the mirror instead of the frame, for the code that
@@ -396,6 +418,7 @@ export function useGameState(): GameState {
     atCap,
     maxWagons,
     isRight,
+    isRightExcluding,
     isRightNow,
     shakeKey,
     placeSeq,

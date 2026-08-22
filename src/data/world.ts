@@ -589,8 +589,9 @@ export const CHOICE_COUNT = 3
  *     coupled rake also gains the rider on every wagon.
  *
  * The width it costs is not taken out of the train. It is taken out of the FRAME:
- * the line now runs off both edges (`HEAD_BLEED` at the near end, `OFFER_TAIL_BLEED`
- * at the far one), which is what every reference frame does with a rake it cannot
+ * the line runs off the far edge (`OFFER_TAIL_BLEED`); the near end keeps the
+ * engine whole, which is the one thing that may not be cut. That is what every
+ * reference frame does with a rake it cannot
  * contain — frames-clean/frame-030 and -031 cut the leading wagon off the left edge,
  * blind/sago-trains-02 and -04 cut the last one off the right.
  */

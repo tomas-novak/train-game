@@ -291,13 +291,22 @@ export default function App() {
       cargoHints ? cargoShownOnWagon(type, taskCargo) : null,
     [cargoHints, taskCargo],
   )
+  /** The train item that exists in state but is still flying: reserved, invisible. */
+  const [pendingKey, setPendingKey] = useState<number | null>(null)
+  /**
+   * Correct as the child can SEE it: a wagon that has been accepted but is still
+   * flying does not count. The signal lamp, the track wash, the counter plate and
+   * the go button all read this, so the green can never arrive before the wagon it
+   * is celebrating.
+   */
+  const visiblyRight = game.isRightExcluding(pendingKey)
   const hasLoco = placedLoco(game.trainItems) !== undefined
   /**
    * Will pressing the button actually send this train? The hook's one answer to
    * that, the same call `submit` makes — so the invitation, the signal lamp and
    * what actually happens on the press cannot come apart.
    */
-  const willDepart = game.isRight
+  const willDepart = visiblyRight
   /** Which of the four things the go button is right now. See `GoState`. */
   const goState: GoState =
     game.phase === 'departing' || game.phase === 'celebrating'
@@ -409,6 +418,8 @@ export default function App() {
   const trackRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const paletteRef = useRef<HTMLDivElement>(null)
+  /** Latches one go press so a second finger cannot send the train twice. */
+  const goPressedRef = useRef(false)
   const starsRef = useRef<HTMLDivElement>(null)
   const goRef = useRef<HTMLButtonElement>(null)
   // One live press per pointer id. A second finger or a resting palm gets its
@@ -441,7 +452,6 @@ export default function App() {
   const [dragging, setDragging] = useState<ActiveDrag | null>(null)
   const [flights, setFlights] = useState<Flight[]>([])
   /** The train item that exists in state but is still flying: reserved, invisible. */
-  const [pendingKey, setPendingKey] = useState<number | null>(null)
   const [isOverTrack, setIsOverTrack] = useState(false)
   const [resetting, setResetting] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
@@ -459,13 +469,23 @@ export default function App() {
     pulseTask,
   } = game
 
-  /** Bounce the palette so a tap that hit nothing still points somewhere. */
+  /**
+   * Bounce the choices so a tap that hit nothing still points somewhere.
+   *
+   * In the world mode `paletteRef` wraps nothing — the choices are drawn inside
+   * TrackZone as the dock — so bouncing the ref animated an empty transparent
+   * band and the child got sound with no direction. Point at whichever of the two
+   * is really on screen.
+   */
   const nudgePalette = useCallback(() => {
-    const el = paletteRef.current
+    const el = isWorld
+      ? document.querySelector<HTMLElement>('[data-dock]')
+      : paletteRef.current
     if (!el) return
     el.classList.remove('attn')
     void el.offsetWidth
     el.classList.add('attn')
+    // isWorld is module scope, not a render value, so it is not a dependency.
   }, [])
 
   /**
@@ -568,6 +588,12 @@ export default function App() {
    *               the only thing that can turn this into something worth pressing.
    */
   const handleGoPress = useCallback(() => {
+    // The one press path that had no per-pointer guard: two simultaneous
+    // pointerdowns both read the same `goState` and fired two whistles and two
+    // submits — the "two trains" the sfx notes warn about.
+    if (goPressedRef.current) return
+    goPressedRef.current = true
+    window.setTimeout(() => { goPressedRef.current = false }, 400)
     const el = goRef.current
     if (el && goState !== 'busy') {
       clearGoFx()
@@ -966,7 +992,11 @@ export default function App() {
       const quick = performance.now() - s.startTime < TAP_MAX_MS
       const onCard =
         releasedOnCard(s.cardEl, e.clientX, e.clientY) ||
-        (paletteRef.current !== null &&
+        // Classic only: in the world mode this ref wraps nothing, so the whole
+        // empty sky band counted as "released on the card" and a drag let go in
+        // mid-air coupled the wagon instead of snapping back.
+        (!isWorld &&
+          paletteRef.current !== null &&
           releasedOnCard(paletteRef.current, e.clientX, e.clientY))
       if (!s.moved || quick || onCard) {
         // The decision is made here and now; the flight is only the story of it.
@@ -1153,6 +1183,23 @@ export default function App() {
   // Any touch anywhere gets an answer: a disc under the finger, drawn straight
   // into the DOM during the event, plus a nudge toward the cards if the tap
   // landed on nothing that does anything.
+  /**
+   * The gesture unlock is a session-level concern, not a subtree one.
+   *
+   * `handleAnyPress` only fires for touches inside App's own container, but the
+   * world scene paints decoration outside it — the two animals on the near bank
+   * sit after `{children}` in `WorldScene`. If the first touch of the session
+   * landed on one of those, `noteGesture()` never ran, so the AudioContext stayed
+   * suspended and the Czech task sentence — the only channel a non-reader has —
+   * was never spoken until something else was touched. A capture listener on the
+   * document catches the first touch wherever it lands.
+   */
+  useEffect(() => {
+    const unlock = () => audio.noteGesture()
+    document.addEventListener('pointerdown', unlock, { capture: true })
+    return () => document.removeEventListener('pointerdown', unlock, { capture: true })
+  }, [audio])
+
   const handleAnyPress = useCallback((e: React.PointerEvent) => {
     const target = e.target as Element | null
     // First thing of all, and cheap: an AudioContext comes up suspended and stays
@@ -1460,7 +1507,7 @@ export default function App() {
             isBlocked={dragging !== null && !canAdd(dragging.item)}
             validation={game.validation}
             /* The one input that may turn anything on the track green. */
-            isRight={game.isRight}
+            isRight={visiblyRight}
             phase={game.phase}
             trackHeight={trackHeight}
             onTapTrack={nudgePalette}

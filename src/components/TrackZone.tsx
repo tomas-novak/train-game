@@ -873,9 +873,9 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
      * own row and that is exactly what made the frame read as two railways.
      *
      * Drawing the offer at a fraction of the coupled size is what keeps the trade
-     * from eating the train: ink is an area, so three wagons at 0.62 carry
-     * 3 x 0.62^2 = 1.15 units of drawn mass against the train's 3.62 at a count of
-     * two. See `OFFER_SCALE` in data/world.ts for the measurement that fraction
+     * from eating the train: ink is an area, so three wagons at `OFFER_SCALE` (0.8)
+     * carry 3 x 0.8^2 = 1.92 units of drawn mass against a count-2 train's 3.5, and
+     * the coupled rake also gains a rider on every wagon. See `OFFER_SCALE` in data/world.ts for the measurement that fraction
      * answers and for why the flight, not the size, is what keeps the wagon the
      * child touched the wagon that travels.
      */

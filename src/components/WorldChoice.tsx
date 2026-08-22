@@ -415,6 +415,9 @@ export function WorldChoice({
   return (
     <div
       ref={rowRef}
+      /* App's refusal nudge points at this, so it needs a handle: in the world
+         mode the classic palette wrapper renders nothing. */
+      data-dock
       className={`flex items-end${loadUnsettled ? ' wc-hint' : ''}`}
       style={{ gap: ROW_GAP }}
     >
