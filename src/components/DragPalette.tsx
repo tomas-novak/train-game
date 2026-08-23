@@ -429,10 +429,16 @@ export function DragPalette({ trainItems, task, maxWagons, onPress, popGo, canPl
     [task.locomotiveIds],
   )
   const wagons = useMemo(
-    () => WAGONS.filter((w) => task.wagonTypeIds.includes(w.type)).map((w) => ({
-      type: w.type,
-      icon: wagonIcon(w.type, task.cargoHints ? cargoShownOnWagon(w.type, task.cargo) : null),
-    })),
+    // Seat order comes from the task, for the same reason as the world dock: the
+    // round shuffles the seats so the answer is not always in the same place, and
+    // filtering the canonical WAGONS list would discard that.
+    () => task.wagonTypeIds
+      .map((id) => WAGONS.find((w) => w.type === id))
+      .filter((w): w is (typeof WAGONS)[number] => w !== undefined)
+      .map((w) => ({
+        type: w.type,
+        icon: wagonIcon(w.type, task.cargoHints ? cargoShownOnWagon(w.type, task.cargo) : null),
+      })),
     [task.wagonTypeIds, task.cargoHints, task.cargo],
   )
 

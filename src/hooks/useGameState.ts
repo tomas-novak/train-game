@@ -93,6 +93,9 @@ export interface GameState {
   isRight: boolean
   /** `isRight`, ignoring one key: the wagon that is accepted but still in flight. */
   isRightExcluding: (hiddenKey: number | null) => boolean
+  /** The accepted-but-still-flying item, and its setter. One truth for every reader. */
+  pendingKey: number | null
+  setPendingKey: (key: number | null) => void
   shakeKey: number
   /** Increments on every accepted wagon placement, replacements included. */
   placeSeq: number
@@ -143,6 +146,31 @@ export function useGameState(): GameState {
    * placements a child makes when he changes his mind.
    */
   const [placeSeq, setPlaceSeq] = useState(0)
+  /**
+   * The item that is accepted but still flying: in the train, hidden on the rails.
+   *
+   * This lives here, not in the component, because EVERY reader of "is the train
+   * right" has to agree about it. It used to live in App, which excluded it when
+   * painting the signal and the go button while `submit` and `isRightNow` still
+   * counted it — so for the 340 ms of a flight the button showed "not yet", the
+   * press played the refusal, and then the train departed anyway. One decision,
+   * one place. The ref mirrors the state for the same reason `phaseRef` does:
+   * decisions taken inside a pointer event cannot wait for a re-render.
+   */
+  const [pendingKey, setPendingKeyState] = useState<number | null>(null)
+  const pendingKeyRef = useRef<number | null>(null)
+  const setPendingKey = useCallback((key: number | null) => {
+    pendingKeyRef.current = key
+    setPendingKeyState(key)
+  }, [])
+  /** The train as the child can see it: without the item that is still in the air. */
+  const visibleItems = useCallback(
+    (items: KeyedTrainItem[]) =>
+      pendingKeyRef.current === null
+        ? items
+        : items.filter((t) => t._key !== pendingKeyRef.current),
+    [],
+  )
   const [pulseTask, setPulseTask] = useState(false)
   const keyCounter = useRef(0)
   const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -287,10 +315,14 @@ export function useGameState(): GameState {
   }, [applyTrain, roundIsOpen, setPhase])
 
   const submit = useCallback(() => {
-    const loco = trainItems.find((t) => t.kind === 'loco') as
+    // The train the child can see, which is the train the button is showing him a
+    // verdict about. Counting a wagon that is still in the air made the press play
+    // the refusal and depart in the same gesture.
+    const judged = visibleItems(trainItems)
+    const loco = judged.find((t) => t.kind === 'loco') as
       | Extract<KeyedTrainItem, { kind: 'loco' }>
       | undefined
-    const wagonItems = trainItems.filter((t) => t.kind === 'wagon') as Extract<
+    const wagonItems = judged.filter((t) => t.kind === 'wagon') as Extract<
       KeyedTrainItem,
       { kind: 'wagon' }
     >[]
@@ -309,7 +341,7 @@ export function useGameState(): GameState {
       setPulseTask(true)
       pulseTimerRef.current = setTimeout(() => setPulseTask(false), PULSE_MS)
     }
-  }, [task, trainItems, setPhase])
+  }, [task, trainItems, setPhase, visibleItems])
 
   const nextRound = useCallback(() => {
     const newProgress = { ...progress }
@@ -372,6 +404,7 @@ export function useGameState(): GameState {
       const visible = hiddenKey === null
         ? trainItems
         : trainItems.filter((t) => t._key !== hiddenKey)
+      void 0
       const wagons = placedWagons(visible)
       return validateTrain(
         task,
@@ -389,7 +422,7 @@ export function useGameState(): GameState {
    * of the flight, while the last pip was still an open ring and the rails still
    * showed a gap. The green may not arrive before the wagon does.
    */
-  const isRight = isRightExcluding(null)
+  const isRight = isRightExcluding(pendingKey)
 
   /**
    * The same question asked of the mirror instead of the frame, for the code that
@@ -399,7 +432,9 @@ export function useGameState(): GameState {
    * who fills the last slot and taps once more to the wrong place.
    */
   const isRightNow = useCallback(() => {
-    const items = trainRef.current
+    // Same exclusion as `isRight` and `submit`: a wagon in the air is not yet an
+    // answer, so a signpost may not invite a press the button will refuse.
+    const items = visibleItems(trainRef.current)
     const wagons = placedWagons(items)
     return validateTrain(
       task,
@@ -407,7 +442,7 @@ export function useGameState(): GameState {
       wagons[0]?.type ?? null,
       wagons.length,
     ).allCorrect
-  }, [task])
+  }, [task, visibleItems])
 
   return {
     task,
@@ -419,6 +454,8 @@ export function useGameState(): GameState {
     maxWagons,
     isRight,
     isRightExcluding,
+    pendingKey,
+    setPendingKey,
     isRightNow,
     shakeKey,
     placeSeq,

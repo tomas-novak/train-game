@@ -244,10 +244,17 @@ export function WorldChoice({
    */
   const choices = useMemo(
     () =>
-      WAGONS.filter((wg) => task.choiceTypeIds.includes(wg.type)).map((wg) => ({
-        type: wg.type,
-        Icon: wagonIcon(wg.type, cargoShownOnWagon(wg.type, task.cargo)),
-      })),
+      // Seat order comes from the TASK, not from WAGONS. Filtering the canonical
+      // list threw the round's shuffle away and pinned the answer to a seat its
+      // cargo decided — hopper left, tank middle, box right, every round — so the
+      // level could be won by remembering a position instead of matching the load.
+      task.choiceTypeIds
+        .map((id) => WAGONS.find((wg) => wg.type === id))
+        .filter((wg): wg is (typeof WAGONS)[number] => wg !== undefined)
+        .map((wg) => ({
+          type: wg.type,
+          Icon: wagonIcon(wg.type, cargoShownOnWagon(wg.type, task.cargo)),
+        })),
     [task.choiceTypeIds, task.cargo],
   )
 

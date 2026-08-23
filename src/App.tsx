@@ -291,15 +291,13 @@ export default function App() {
       cargoHints ? cargoShownOnWagon(type, taskCargo) : null,
     [cargoHints, taskCargo],
   )
-  /** The train item that exists in state but is still flying: reserved, invisible. */
-  const [pendingKey, setPendingKey] = useState<number | null>(null)
   /**
-   * Correct as the child can SEE it: a wagon that has been accepted but is still
-   * flying does not count. The signal lamp, the track wash, the counter plate and
-   * the go button all read this, so the green can never arrive before the wagon it
-   * is celebrating.
+   * The accepted-but-still-flying item, and the verdict that excludes it, both now
+   * owned by the hook. They used to live here, and `submit` did not know about them:
+   * the button said "not yet" and the train departed anyway, in one gesture.
    */
-  const visiblyRight = game.isRightExcluding(pendingKey)
+  const { pendingKey, setPendingKey } = game
+  const visiblyRight = game.isRight
   const hasLoco = placedLoco(game.trainItems) !== undefined
   /**
    * Will pressing the button actually send this train? The hook's one answer to
@@ -482,9 +480,12 @@ export default function App() {
       ? document.querySelector<HTMLElement>('[data-dock]')
       : paletteRef.current
     if (!el) return
-    el.classList.remove('attn')
+    // The dock needs its own class: the row it lives on also carries `wc-hint`,
+    // which would otherwise swallow `attn` outright. See index.css.
+    const cls = isWorld ? 'dock-attn' : 'attn'
+    el.classList.remove(cls)
     void el.offsetWidth
-    el.classList.add('attn')
+    el.classList.add(cls)
     // isWorld is module scope, not a render value, so it is not a dependency.
   }, [])
 
@@ -659,7 +660,7 @@ export default function App() {
       setPendingKey(null)
     }
     setFlights((prev) => prev.filter((f) => f.id !== id))
-  }, [])
+  }, [setPendingKey])
 
   /** Safety net: reveal the item even if the animation never reports finishing. */
   const armFlightTimer = useCallback((id: number, ms: number) => {
@@ -693,7 +694,7 @@ export default function App() {
       ])
       armFlightTimer(id, FLY_MS)
     },
-    [armFlightTimer, finishFlight],
+    [armFlightTimer, finishFlight, setPendingKey],
   )
 
   /** A drag that ended nowhere useful: the item visibly returns to its card. */

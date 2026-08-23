@@ -1,23 +1,25 @@
 import type { CargoDef, LevelDef, Task, WagonType } from '../types'
 import { CARGO } from '../data/cargo'
-import { WAGONS } from '../data/wagons'
 import { CHOICE_COUNT, WORLD_MAX_COUNT } from '../data/world'
 import { readMode } from './mode'
 
-/** Canonical left-to-right order, so a type always shows up in the same relative place. */
-const WAGON_ORDER: WagonType[] = WAGONS.map((w) => w.type)
-
 /**
  * The wagon cards this round offers: the type the task needs, plus enough
- * distractors drawn from the level's own pool to fill the row, in canonical
- * order so the correct card is not always in the same seat.
+ * distractors drawn from the level's own pool to fill the row, then SHUFFLED.
  *
  * `want` is how many to end up with. Classic passes the level's own
- * `wagonChoices`, exactly as before; the world passes `CHOICE_COUNT`, because a
- * pick-one-of-three round is three wagons at every level — see
- * `Task.choiceTypeIds`. Either way the correct type goes in first, the rest are
- * drawn at random from the level's pool, and the result is sorted back into
- * canonical order so the right answer is not always in the same seat.
+ * `wagonChoices`; the world passes `CHOICE_COUNT`, because a pick-one-of-three
+ * round is three wagons at every level — see `Task.choiceTypeIds`.
+ *
+ * The seats are shuffled, not sorted. This used to sort the result back into a
+ * canonical wagon order, and the comment claimed that kept the answer out of the
+ * same seat — which is only true while the distractors vary. On level 1 in the
+ * world mode the pool is drawn in full (three of three), so a canonical order
+ * pinned the answer's seat to its cargo: hopper left, tank middle, box right,
+ * every round. The level stayed winnable by remembering a position instead of by
+ * matching the load, which is the one thing it exists to teach. Shuffling costs
+ * the row nothing — the order is fixed for the round, because the task object is
+ * built once — and it makes the load the only thing worth reading.
  */
 function pickWagonTypes(levelDef: LevelDef, cargo: CargoDef, want: number): WagonType[] {
   const pool = levelDef.wagonTypeIds.filter((type) => type !== cargo.wagonType)
@@ -26,7 +28,12 @@ function pickWagonTypes(levelDef: LevelDef, cargo: CargoDef, want: number): Wago
   while (chosen.length < take && pool.length > 0) {
     chosen.push(...pool.splice(Math.floor(Math.random() * pool.length), 1))
   }
-  return WAGON_ORDER.filter((type) => chosen.includes(type))
+  // Fisher-Yates, so every seat is equally likely for the answer.
+  for (let i = chosen.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[chosen[i], chosen[j]] = [chosen[j], chosen[i]]
+  }
+  return chosen
 }
 
 /**
