@@ -17,8 +17,47 @@ a po každém úspěchu dostane výraznou odměnu.**
 | Náklad na vagónech | Jen na levelu 1–2; na nejvyšším levelu vagóny zůstanou prázdné |
 | Cílové zařízení | Android tablet (Chrome) |
 
-Odkazy na kód (`soubor:řádek`) platí ke commitu, ve kterém roadmapa vznikla — po
-implementaci se budou posouvat.
+---
+
+## Stav k 23. 8. 2026
+
+Celá sekce A je hotová a zmergovaná (PR #11, merge `8d1b609`). Hotové je i C1, C3 a D1,
+částečně D2 a E. Sekce B, C2 a D3 zbývají.
+
+| Sekce | Stav | Kde to je |
+|---|---|---|
+| A1 zvuky + český hlas | ✅ hotovo | `utils/sfx.ts`, `hooks/useSpeech.ts`, `hooks/useGameAudio.ts`, `data/phrases.ts`, `components/MuteButton.tsx` |
+| A2 ťuknutí místo táhnutí | ✅ hotovo | `App.tsx`, `components/DragPalette.tsx`, `utils/train.ts` |
+| A3 lehčí level 1 + náklad na vagónech | ✅ hotovo | `data/levels.ts`, `data/cargo.ts`, `components/svgs.tsx`, `utils/random.ts` |
+| A4 tečky u čísla + živý čítač | ✅ hotovo | `components/CountRow.tsx`, `components/TaskHero.tsx`, `components/TrackZone.tsx` |
+| A5 ikona místo „Jet!“ | ✅ hotovo | `App.tsx`, `index.css` |
+| B1 konfety, delší odjezd, tempo dítěte | ⏳ částečně | odjezd hotový, konfety pořád mrtvý kód, auto-advance zůstal |
+| B2 mapa cesty / sbírání | ☐ nezačato | pořád hvězdičky a tečky |
+| B3 mašinka s očima, příběh | ⏳ částečně | oči a úsměv jen ve world módu, jméno a příběh nikde |
+| C1 semafor zezelená sám | ✅ hotovo | `hooks/useGameState.ts` (`isRight`), `components/TrackZone.tsx` |
+| C2 adaptivní obtížnost | ☐ nezačato | level jde pořád jen nahoru |
+| C3 zámek resetu | ✅ hotovo | `App.tsx` (`RESET_HOLD_MS`), podržení 900 ms |
+| D1 pointerId | ✅ hotovo | `App.tsx`, vyřešeno spolu s A2 |
+| D2 PWA / fullscreen / gesta | ⏳ částečně | pull-to-refresh vypnutý, zbytek ne |
+| D3 rozložení na šířku | ☐ nezačato | a je to teď blokátor i pro E, viz níže |
+| E další módy | ⏳ částečně | „Který vagón?“ existuje jako `?mode=world` |
+
+### Co u toho vzniklo navíc
+
+- **Pravda v signálech.** Nebylo to v roadmapě, ale bez toho nešlo dodělat A3 ani A4.
+  Zelená teď znamená jedinou věc: „vlak je správně“. Potvrzení položení je bez barvy,
+  zelenou má jen semafor, výplň čítače a pozvání na tlačítku, a všechno tohle čte jeden
+  zdroj (`isRight`), který nepočítá vagón, co ještě letí. Dřív hra pustila velkou zelenou
+  i na přepočítaný nebo úplně špatný vlak a pak ho při odeslání odmítla.
+- **Špatný vagón se dá vzít zpět.** V klasickém módu ťuknutí na jiný typ vagónu vlak
+  přestaví, ve world módu se odmítne a hra v tom samém snímku ukáže cestu ven. Plný
+  špatný vlak už není slepá ulička, ze které se dítě nedostane.
+- **Náhodné pořadí vagónů v nabídce.** Správný vagón se dřív dal poznat podle místa
+  v řadě (uhlí vlevo, mléko doprostřed, jablka doprava, každé kolo stejně), takže level
+  šel vyhrát zapamatováním pozice místo poznávání nákladu. Místa se teď každé kolo míchají.
+- **Testovací nástroj.** Headless Chrome, který hru ovládá skutečnými doteky, měří
+  velikost cílů, latenci reakce a jestli se reakce vůbec vykreslila, a dělá snímky pro
+  srovnání s referencí. Není v repozitáři, je to vývojová věc.
 
 ---
 
@@ -26,80 +65,48 @@ implementaci se budou posouvat.
 
 ### A1. Hra je úplně němá 🔇 ← největší jednotlivá věc
 
-`AGENTS.md` to přiznává v sekci „What Is NOT Built Yet". Čtyřletý nečtenář bere skoro
-všechnu zpětnou vazbu ušima. Teď nemá **žádnou**.
+**✅ Hotovo.** Zvuky se generují kódem (cvaknutí spřáhla, houkačka, šš-šš rozjezd,
+jásot, měkké „ups“ a vlastní tón pro „zkus tenhle“), zadání se čte česky přes
+`speechSynthesis` na začátku kola i po ťuknutí na zadání, a počítá se nahlas.
 
-Co přidat:
+Co je dobré vědět k údržbě:
 
-- **Zvukové efekty**: cvaknutí spřáhla při připojení vagónu, houkačka při odjezdu,
-  šš-šš-šš rozjezd, jásot při správné odpovědi, měkké „ups" při chybě.
-- **Český hlas zadání**: „Tři vagóny s uhlím!" — přehraje se automaticky na začátku kola
-  a znovu po ťuknutí na zadání (`TaskHero`). Tím zadání *přečte hra za dítě* a celý
-  problém „neumí číst" zmizí.
-- **Počítání nahlas**: při přidání vagónu se ozve „jedna… dva… tři…". Zároveň učení
-  počítání i okamžitá zpětná vazba, že se něco stalo.
-- Tlačítko na ztlumení (ikona reproduktoru) pro rodiče.
-
-Technicky: `speechSynthesis` s `lang: 'cs-CZ'` pro mluvené zadání a počítání,
-`Web Audio API` pro pípnutí/houkačku generované kódem. Žádné audio soubory, žádné nové
-závislosti. Na Androidu je český hlas obvykle k dispozici přes Google TTS a autoplay je
-volnější než na iOS. Ošetřit je potřeba:
-
-- hlasy se načítají asynchronně → počkat na `voiceschanged` a vybrat `cs-CZ` hlas
-- fallback, když český hlas na zařízení chybí (nepřehrávat mluvu, jen efekty)
-- první promluvu navázat na uživatelské gesto, ne na `useEffect` při načtení
-- nový hook `src/hooks/useSpeech.ts` + `src/data/phrases.ts` s frázemi (obsah patří do
-  `/src/data/`, jak žádá `AGENTS.md`)
+- Číslo se řekne do několika ms po dopadu vagónu, a když se to nestihne, zahodí se.
+  Zastaralé číslo je horší než ticho, protože pojmenuje jiný okamžik.
+- České tvary jsou v `data/phrases.ts`: „jeden vagon“, „dva vagony“, „pět vagonů“.
+  Naivní šablona udělá „pět vagony“, což je přesně ten druh chyby, po které dospělý
+  hru vypne.
+- Když v zařízení český hlas není, hra mluvit přestane, ale hraje se dál a nic nespadne.
+- Hlas se odemkne prvním dotekem kdekoli na obrazovce, ne jen na herních prvcích.
+- Ztlumení je ikona bez textu, 88 px.
 
 ### A2. Drag & drop je pro čtyřleté ruce moc těžké
 
-`App.tsx:59-79` + `DragPalette.tsx:27` — `onPointerDown` **okamžitě** spustí táhnutí.
-Když dítě jen ťukne (což dělá nejčastěji), drag skončí mimo kolej a **nestane se vůbec
-nic**. Žádná odezva. To je to nejhorší, co se dítěti v této hře může stát.
-
-Co přidat:
-
-- **Ťuknutí = přidání vagónu.** Rozlišit tap vs. drag podle vzdálenosti/času pohybu;
-  krátký tap na kartu v paletě → vagón přiletí na kolej s animací.
-- Drag ponechat pro ty, koho baví (nebo ho úplně zahodit — pro tento věk je zbytečný).
-- Zvětšit „lepivost" dropu — kolej má chytat i drop kousek nad/pod sebou.
+**✅ Hotovo.** Ťuknutí položí vagón, rozhodnutí ano/ne padne synchronně už při stisknutí,
+takže jeden dotek nikdy nedostane „ano“ a hned po něm „ne“. Táhnutí zůstalo, drop je
+odpouštivý a druhý prst nebo dlaň už táhnutí nerozbije (tím je hotové i D1).
 
 ### A3. Level 1 je pro čtyřletého moc těžký
 
-`data/levels.ts` omezuje jen **čísla** (1–3), ale paleta pořád nabízí **3 lokomotivy a
-všech 6 typů vagónů** (`DragPalette.tsx:67,92`). Šance trefit správný typ naslepo je 1:6.
-A mapování „mléko → cisterna" je abstraktní kategorizace, kterou čtyřleté dítě neumí —
-proto pořád chybuje a přestane ho to bavit.
+**✅ Hotovo.** Level 1 nabízí 2 typy vagónů a čísla 1–2, `LevelDef` má `wagonTypeIds`,
+`locomotiveIds`, `wagonChoices` a `cargoHints`, a náklad je nakreslený přímo ve vagónu
+na levelu 1–2 (na levelu 3 zůstávají prázdné, jak roadmapa chtěla).
 
-Co přidat:
-
-- **Zjednodušený level 1**: v paletě jen 2–3 typy vagónů (ten správný + 1–2 rozlišovače)
-  a čísla 1–2. Výběr vygenerovat z aktuálního zadání.
-- **Náklad nakreslit přímo na vagón** v paletě (uhlí na výsypném voze, mléko na cisterně,
-  jablka koukající z krytého vozu). Ve `svgs.tsx` jsou vagóny teď prázdné skořápky.
-  Tímhle se mapování stane **samovysvětlující** a nápověda přestane být potřeba.
-  **Zapnuté jen na levelu 1–2**, na nejvyšším levelu vagóny zůstanou prázdné, aby si dítě
-  mapování postupně zapamatovalo. Implementačně = volitelný prop `showCargo` na wagon SVG
-  komponentách + příznak `cargoHints: boolean` v `LevelDef`.
-- Rozšířit `LevelDef` v `types/index.ts` o `wagonTypeIds` (které typy zobrazit) a
-  `locomotiveIds` — vše dál v `/src/data/`.
+Pozor při úpravách: náklad musí být poznat ve velikosti karty. Dvě kola review padla na
+tom, že mléko byla skoro bílá láhev na skoro bílé cisterně a rozbíjela siluetu vagónu,
+který se má dítě naučit.
 
 ### A4. Číslo v zadání je jen číslice
 
-`TaskHero.tsx:45` zobrazí `{task.count}`. Čtyřleté dítě číslici „3" často ještě spolehlivě
-nepřečte, ale **tři tečky pozná okamžitě** (subitizace).
+**✅ Hotovo.** Pod číslicí jsou tečky (zlom po pěti) a u koleje stojí jedno prázdné lůžko
+na každý chybějící vagón, ve velikosti vagónu, takže si dítě odpověď zkontroluje samo
+předem. Při počtu 10 se všechno vejde do obrazovky v obou orientacích.
 
-Co přidat:
+### A5. Tlačítko „Jet!“ má text, který dítě nepřečte
 
-- Pod číslici doplnit **tečky/puntíky** (●●●) — číslo i množství zároveň.
-- **Živý čítač** u koleje: prázdné obrysy se zaplňují, jak dítě přidává vagóny (3 obrysy →
-  2 plné, 1 prázdný). Dítě si tak umí odpověď zkontrolovat *samo předem*, místo aby čekalo
-  na verdikt.
-
-### A5. Tlačítko „Jet!" má text, který dítě nepřečte
-
-`App.tsx:230` — `<span>Jet!</span>`. Porušuje pravidlo „no text labels" z `AGENTS.md`.
-Nahradit čistě ikonou (velká zelená šipka / mašinka) a doplnit zvukem houkačky.
+**✅ Hotovo.** Tlačítko je jen ikona, má vlastní barvu, kterou nic jiného na obrazovce
+nepoužívá, a plocha, která reaguje, sedí na tom, co je vidět. Správný a špatný výsledek
+už nejsou signalizované obráceně (houkačka se dřív ozvala i na špatný vlak).
 
 ---
 
@@ -107,76 +114,52 @@ Nahradit čistě ikonou (velká zelená šipka / mašinka) a doplnit zvukem houk
 
 ### B1. Odměna je moc krátká a málo výrazná
 
-`useGameState.ts:13` — oslava trvá 2,2 s a pak se automaticky přepne dál. Dítě si úspěch
-nestihne užít a nemá nad tím kontrolu.
+**⏳ Částečně.** Odjezd už je skutečný: houkačka, kouř, vlak se rozjede po kolejích.
+Zbývá ale to hlavní z tohohle bodu:
 
-Co přidat:
-
-- **Konfety** — `canvas-confetti` je v `package.json` nainstalované a komponenta
-  `CelebrationScreen.tsx` ho používá, ale **je to mrtvý kód, nikde se nevolá** (používá se
-  jen `Celebration.tsx` s SVG hvězdami). Stačí ji zapojit.
-- Vlak, který **opravdu odjede** přes celou obrazovku s kouřem, otáčejícími se koly a
-  houkačkou (teď `train-depart` v `index.css:17` jen posune obsah v 140px pruhu).
-- Místo auto-advance nechat na obrazovce **velké zelené tlačítko „další"** — dítě si určí
-  tempo samo. Agency je pro čtyřleté zásadní.
+- **Konfety jsou pořád mrtvý kód.** `components/CelebrationScreen.tsx` používá
+  `canvas-confetti`, ale nikdo ji nevolá; `App.tsx` renderuje `Celebration` (SVG hvězdy)
+  a ve world módu `WorldCheer`. Buď zapojit, nebo ten soubor smazat.
+- **Auto-advance zůstal.** `CELEBRATE_MS = 2200` v `hooks/useGameState.ts` a hra se
+  přepne sama. Velké zelené tlačítko „další“, aby si tempo určilo dítě, není.
 
 ### B2. Postup je zobrazený abstraktně
 
-Hvězdičky + tečky vpravo nahoře (`App.tsx:139-167`). Čtyřleté dítě nechápe „3 tečky =
-postup do dalšího levelu".
-
-Co přidat:
-
-- **Mapa cesty**: vláček po každém správném kole popojede o jedno políčko k dalšímu
-  nádraží. Konkrétní, vizuální, srozumitelné bez čtení.
-- Nebo **sbírání**: za každý vlak přibude zvířátko / samolepka do „vagónové knížky".
-  Sbírání je pro tenhle věk nejsilnější motivátor, jaký existuje.
+**☐ Nezačato.** Pořád hvězdičky a tečky vpravo nahoře. Mapa cesty ani sbírání zvířátek
+nejsou.
 
 ### B3. Hra nemá postavu ani příběh
 
-Není důvod, *proč* vlak skládat. Čtyřleté děti jedou na příběhu.
-
-Co přidat:
-
-- Mašince dát **oči a jméno** (mrká, usmívá se, při chybě se zatváří smutně).
-- Mikro-příběh v obrázcích: na nádraží čeká hromada uhlí / stádo krav → vlak to má odvézt.
-  Žádný text — jen ikonky u cíle cesty.
+**⏳ Částečně.** Ve world módu má lokomotiva oči a úsměv a ve vagónech i na nádraží sedí
+zvířátka. V klasickém módu je vlak schválně nezměněný, je to kontrolní obrazovka pro
+srovnání. Jméno mašinky, smutná tvář při chybě a mikro-příběh u cíle nejsou.
 
 ---
 
 ## C. Férovost a adaptivita
 
-### C1. Zpětná vazba je „všechno nebo nic"
+### C1. Zpětná vazba je „všechno nebo nic“
 
-`useGameState.ts:114-137` — dítě musí trefit lokomotivu + typ + počet *najednou*, jinak
-třes + červená. Žádná částečná odměna.
-
-Co přidat:
-
-- **Semafor u koleje** (už existuje, `TrackZone.tsx:13`) může **zezelenat sám**, jakmile je
-  vlak správně — ještě před odesláním. Dítě dostane průběžnou nápovědu „teď je to dobře".
-- Chybu rozdělit: zvlášť reakce na špatný typ (vagón se „zavrtí a odmítne") a zvlášť na
-  špatný počet (ukázat, kolik chybí/přebývá).
-- Zmírnit chybovou reakci — třes celé obrazovky + červená může menší dítě odradit. Lépe:
-  povzbudivý zvuk + jemné nakopnutí správným směrem.
+**✅ Hotovo.** Semafor u koleje zezelená sám, jakmile je vlak správně, ještě před
+odesláním, a zelenou nedostane vlak, který tlačítko odmítne. Chyba je rozdělená: špatný
+typ dostane odmítnutí na kartě a ukázání na to, co jde, špatný počet se odmítne na
+kapacitě. Třes obrazovky a červená zůstaly jen na odeslání špatného vlaku.
 
 ### C2. Obtížnost jde jen nahoru
 
-`useGameState.ts:139-156` — 3 správné a level se **natrvalo** zvýší; zpět se nikdy
-nespadne. Když se čtyřletý prokliká na level 3 (1–10 vagónů!), hra se stane nehratelnou a
-on skončí.
+**☐ Nezačato.** `nextRound` v `hooks/useGameState.ts` pořád jen přičítá a level se
+zvyšuje `Math.min(level + 1, …)`. Chybí:
 
-Co přidat:
-
-- **Adaptivní obtížnost**: po 2–3 chybách za sebou snížit level (nebo aspoň `maxNumber`).
-- Vyžadovat správné odpovědi **za sebou**, ne kumulativně.
-- Level 3 s 10 vagóny je pro 4 roky nereálný — strop stáhnout na ~5.
+- snížit level (nebo aspoň `maxNumber`) po 2–3 chybách za sebou,
+- počítat správné odpovědi za sebou, ne kumulativně,
+- strop levelu 3 stáhnout z 10 na ~5. World mód má vlastní strop 2
+  (`WORLD_MAX_COUNT` v `data/world.ts`), klasický mód má pořád 1–10.
 
 ### C3. Tlačítko resetu je past
 
-`App.tsx:136` — celý blok hvězdiček a teček je `<button>`, který **jedním ťuknutím bez
-potvrzení smaže veškerý postup**. Je to velký cíl nahoře na obrazovce, přesně tam, kam
-dítě náhodně ťuká. Schovat za dlouhý stisk / rodičovskou bránu (např. podržet 3 s).
+**✅ Hotovo.** Reset je za podržením, `RESET_HOLD_MS = 900` v `App.tsx`. Roadmapa
+navrhovala ~3 s; 900 ms stačí na to, aby to nešlo omylem, ale klidně to zvyšte, jestli
+se na to dítě prokliká.
 
 ---
 
@@ -184,73 +167,91 @@ dítě náhodně ťuká. Schovat za dlouhý stisk / rodičovskou bránu (např. 
 
 ### D1. Multi-touch rozbíjí táhnutí
 
-`App.tsx:60-72` poslouchá `pointermove`/`pointerup` na `window` a **neřeší `pointerId`**.
-Když dítě položí na tablet druhý prst nebo dlaň, drag poskočí nebo se ukončí předčasně.
-Řešení: uložit si `pointerId` startovního doteku a ostatní ignorovat.
+**✅ Hotovo.** Vyřešeno spolu s A2: startovní `pointerId` se uloží a ostatní se ignorují.
 
 ### D2. Chybí fullscreen / PWA (Android Chrome)
 
-`index.html` má jen základní viewport. Na Android tabletu to znamená: viditelná lišta
-prohlížeče, **pull-to-refresh uprostřed hry** (dítě omylem restartuje kolo), double-tap
-zoom a přetahování stránky.
+**⏳ Částečně.** Hotové je vypnutí pull-to-refresh (`overscroll-behavior: none`
+v `index.css`) a stránka se neposouvá, `scrollHeight` se rovná `clientHeight` v obou
+orientacích.
 
-Co přidat:
+Zbývá:
 
-- `public/manifest.json` + `display: "fullscreen"` → Chrome nabídne „Instalovat aplikaci"
-  a hra pak běží bez lišty prohlížeče. Na Androidu funguje výrazně líp než na iOS.
-- `overscroll-behavior: none` na `html, body` v `index.css` → **vypne pull-to-refresh**.
-- `touch-action: manipulation` globálně → zabije double-tap zoom a 300ms delay.
-- `user-scalable=no, maximum-scale=1` ve viewport meta v `index.html`.
-- Volitelně `screen.orientation.lock()` + Wake Lock API (obojí na Androidu funguje), aby
-  tablet nezhasl uprostřed přemýšlení.
+- `public/manifest.json` + `display: "fullscreen"`, aby Chrome nabídl „Instalovat aplikaci“,
+- `touch-action: manipulation` globálně (double-tap zoom a 300ms delay),
+- `user-scalable=no, maximum-scale=1` ve viewport meta v `index.html`, ta je pořád
+  v původním stavu,
+- volitelně `screen.orientation.lock()` a Wake Lock.
 
 ### D3. Rozložení na šířku
 
-`useTablet.ts` je jediný breakpoint 768px. Tablet na šířku (1024×768) má málo výšky, ale
-hodně šířky — paleta + kolej + tlačítko naskládané pod sebou se tam mačkají. Řešení: na
-landscape dát paletu po stranách a kolej přes celou spodní část.
+**☐ Nezačato, a přibyl druhý důvod.** K původnímu (na šířku je málo výšky, paleta patří
+po stranách) se přidalo tohle: world mód potřebuje kreslit vagóny v referenční velikosti,
+a na výšku to nejde. Tablet na výšku má 768 px šířky, lokomotiva plus jeden vagón
+v referenční velikosti měří asi 840 px, takže celý vlak se na výšku nevejde. Všechny
+referenční screenshoty Sago jsou na šířku. Na šířku se referenční velikost povedla, na
+výšku ne, a spravit to znamená právě D3.
 
 ---
 
 ## E. Obsahová variabilita (až budou hotové A–D)
 
-Jedno jediné zadání pořád dokola omrzí. Nápady na střídání módů:
+**⏳ Částečně.** „Který vagón?“ existuje jako druhá obrazovka, ne jako náhrada:
 
-- **Nakládání**: vlak je složený, dítě přetahuje náklad *do* vagónů.
-- **Který vagón?**: jen výběr 1 ze 3 — nejjednodušší mód, dobrý rozjezd pro nejmenší.
-- **Volná jízda / pískoviště**: žádné zadání, dítě si staví vlak jak chce a pouští ho. Pro
-  čtyřleté často **nejzábavnější režim ze všech** a je skoro zadarmo — logika už existuje.
-- Barvičky: „postav červený vlak".
+- `?mode=world` je nová obrazovka, `?mode=classic` je původní, nezměněná. Bez parametru
+  se ukáže world. Přepínač je v `utils/mode.ts`, obsah v `data/world.ts`,
+  `components/WorldScene.tsx` a `components/WorldChoice.tsx`.
+- World mód nemá žádnou paletu: vagóny stojí na té samé koleji, mají náklad vidět,
+  ťuknutím se rozjedou a připojí, nic není zašedlé. Kolo je výběr ze tří, počet 1–2.
+- Obě obrazovky procházejí stejnými kontrolami (cíle ≥ 64 px, reakce do 100 ms a opravdu
+  vykreslená, žádná čitelná slova, žádné posouvání stránky).
+
+Na rovinu: srovnání celé obrazovky se Sago Mini Trains naslepo world mód nevyhrál.
+Zbývající rozdíl je z velké části D3 (viz výše). Pokusy o jinou geometrii, které se
+neosvědčily (skládaná kolej, prudší stoupání, menší vagóny), jsou na větvi
+`feature/sekce-e-experiment` i s měřením, proč se nepoužily.
+
+Zbývá z původního seznamu:
+
+- **Nakládání**: vlak je složený, dítě přetahuje náklad do vagónů.
+- **Volná jízda / pískoviště**: žádné zadání, dítě si staví vlak jak chce a pouští ho.
+- Barvičky: „postav červený vlak“.
 
 ---
 
 ## Pořadí implementace
 
-Každá fáze je samostatně použitelná a dá se otestovat s dítětem, než se pokračuje dál.
-
 | Fáze | Co | Proč | Stav |
 |---|---|---|---|
-| **1** | A2 tap-to-place · A1 zvuky + český hlas · A5 ikona místo „Jet!" | Odstraní frustraci z ovládání a hru „ozvučí" | ☐ |
-| **2** | A3 lehčí level 1 · náklad na vagónech (lvl 1–2) · A4 tečky u čísla | Dítě konečně chápe zadání | ☐ |
-| **3** | C1 průběžný semafor · C2 adaptivní obtížnost · C3 zámek resetu | Hra přestane trestat | ☐ |
-| **4** | B1 konfety + delší odjezd · B2 mapa cesty · B3 mašinka s očima | Odměna, kvůli které se dítě vrací | ☐ |
-| **5** | D1 pointerId · D2 PWA/fullscreen + vypnutí pull-to-refresh · D3 landscape | Tablet konečně sedne | ☐ |
-| **6** | E volná jízda / další módy | Životnost hry | ☐ |
+| **1** | A2 tap-to-place · A1 zvuky + český hlas · A5 ikona místo „Jet!“ | Odstraní frustraci z ovládání a hru „ozvučí“ | ✅ |
+| **2** | A3 lehčí level 1 · náklad na vagónech (lvl 1–2) · A4 tečky u čísla | Dítě konečně chápe zadání | ✅ |
+| **3** | C1 průběžný semafor · C2 adaptivní obtížnost · C3 zámek resetu | Hra přestane trestat | ⏳ C1 a C3 hotové, C2 zbývá |
+| **4** | B1 konfety + delší odjezd · B2 mapa cesty · B3 mašinka s očima | Odměna, kvůli které se dítě vrací | ⏳ odjezd a oči (world) hotové, zbytek zbývá |
+| **5** | D1 pointerId · D2 PWA/fullscreen + vypnutí pull-to-refresh · D3 landscape | Tablet konečně sedne | ⏳ D1 a pull-to-refresh hotové |
+| **6** | E volná jízda / další módy | Životnost hry | ⏳ „Který vagón?“ jako `?mode=world` |
 
-**Kdyby byl čas jen na jednu věc:** zvuk s českým hlasem (A1) + ťuknutí místo táhnutí (A2).
-Tyhle dvě samy o sobě mění hru z „nechápu, co po mně chce a nic nereaguje" na hratelnou.
+**Co dělat dál, kdyby byl čas jen na jednu věc:** dát tablet dítěti a nechat ho vybrat
+mezi `?mode=world` a `?mode=classic`. Ta odpověď rozhodne, jestli má smysl dělat D3
+a s ním dotáhnout world mód, nebo jít na B1 a C2 v klasickém módu.
 
-**Nejlevnější drobnost s velkým efektem:** vypnout pull-to-refresh
-(`overscroll-behavior: none`) a zamknout reset tlačítko — obojí je pár řádků a obojí teď
-dítěti aktivně kazí hru.
+**Nejlevnější drobnost s velkým efektem, která pořád leží:** dopsat `touch-action`
+a viewport meta z D2. Je to pár řádků a double-tap zoom umí kolo rozbít.
 
 ---
 
 ## Jak ověřovat každou fázi
 
-- `npm run build` a `npm run lint` musí projít (`AGENTS.md`).
-- `npm run dev` v emulaci Android tabletu na výšku i na šířku — projít všechny levely,
-  ověřit tap i drag, min. tap target 64 px.
-- Ručně projít hraniční případy validace: `count = 1`, `count = max`, náklad `people`.
+- `npm run build` a `npm run lint` musí projít (`AGENTS.md`). Základ je: build čistý,
+  lint hlásí **právě jedno** staré varování (`useTablet.ts:10`, chybějící `mq`).
+  Dvě varování jsou chyba.
+- `npm ci` musí projít. Lockfile se nemá měnit, když se nemění `package.json`.
+- Emulace Android tabletu na výšku i na šířku, projít levely, ověřit tap i drag,
+  min. tap target 64 px.
+- **Každý dotek musí do 100 ms něco udělat, a musí se to opravdu vykreslit.** Mutace
+  DOM za zamrznutým hlavním vláknem je pro dítě nevidět. Animovat `transform`
+  a `opacity`, ne `background-color` a `box-shadow`.
+- Ručně projít hraniční případy: `count = 1`, `count = max`, náklad `people`, plný
+  špatný vlak, dvě ruce na obrazovce, ťuknutí během odjezdu a během oslavy.
 - Zvuk otestovat po prvním doteku a na zařízení bez českého hlasu (fallback nesmí spadnout).
+- Když se sahá do world módu, zkontrolovat i klasický. Je to kontrolní obrazovka.
 - Nakonec zkusit s dítětem — jediný test, který opravdu platí.
