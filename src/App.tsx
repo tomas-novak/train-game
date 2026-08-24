@@ -1,6 +1,7 @@
 import { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react'
 import { useGameState } from './hooks/useGameState'
 import { useTablet } from './hooks/useTablet'
+import { useWakeLock } from './hooks/useWakeLock'
 import { useSpeech } from './hooks/useSpeech'
 import { useGameAudio } from './hooks/useGameAudio'
 import { CORRECT_PER_LEVEL } from './data/levels'
@@ -238,6 +239,7 @@ const SceneShell = isWorld ? WorldScene : Scene
 export default function App() {
   const game = useGameState()
   const isTablet = useTablet()
+  useWakeLock()
   /**
    * The viewport's height in px, because world mode's track band is a fraction of
    * it and the whole scene is anchored to that band. Read once and then on resize

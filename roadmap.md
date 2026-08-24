@@ -38,7 +38,7 @@ Celá sekce A je hotová a zmergovaná (PR #11, merge `8d1b609`). Hotové je i C
 | C2 adaptivní obtížnost | ✅ hotovo | `utils/progress.ts`, `hooks/useGameState.ts` |
 | C3 zámek resetu | ✅ hotovo | `App.tsx` (`RESET_HOLD_MS`), podržení 900 ms |
 | D1 pointerId | ✅ hotovo | `App.tsx`, vyřešeno spolu s A2 |
-| D2 PWA / fullscreen / gesta | ⏳ částečně | pull-to-refresh vypnutý, zbytek ne |
+| D2 PWA / fullscreen / gesta | ✅ hotovo | `index.html`, `public/manifest.json`, `src/index.css`, `hooks/useWakeLock.ts` |
 | D3 rozložení na šířku | ☐ nezačato | a je to teď blokátor i pro E, viz níže |
 | E další módy | ⏳ částečně | „Který vagón?“ existuje jako `?mode=world` |
 
@@ -189,17 +189,22 @@ se na to dítě prokliká.
 
 ### D2. Chybí fullscreen / PWA (Android Chrome)
 
-**⏳ Částečně.** Hotové je vypnutí pull-to-refresh (`overscroll-behavior: none`
-v `index.css`) a stránka se neposouvá, `scrollHeight` se rovná `clientHeight` v obou
-orientacích.
+**✅ Hotovo.** Vypnutí pull-to-refresh (`overscroll-behavior: none` v `index.css`)
+bylo hotové už dřív, stránka se neposouvá, `scrollHeight` se rovná `clientHeight`
+v obou orientacích. Přibylo: `public/manifest.json` s `display: "fullscreen"`,
+`touch-action: manipulation` na `html` a `body` (double-tap zoom a 300ms delay
+pryč, tažení z A2 zůstalo živé přes `touch-action: none` na tažených plochách),
+`user-scalable=no, maximum-scale=1` ve viewport meta a `lang="cs"` v `index.html`,
+a Wake Lock (`hooks/useWakeLock.ts`) proti zhasnutí obrazovky během hraní.
 
 Zbývá:
 
-- `public/manifest.json` + `display: "fullscreen"`, aby Chrome nabídl „Instalovat aplikaci“,
-- `touch-action: manipulation` globálně (double-tap zoom a 300ms delay),
-- `user-scalable=no, maximum-scale=1` ve viewport meta v `index.html`, ta je pořád
-  v původním stavu,
-- volitelně `screen.orientation.lock()` a Wake Lock.
+- **Service worker.** Vlastní rozhodnutí, ne mezera: cíl je fullscreen a ikona na
+  ploše, ne offline režim, a přidávat ho jen kvůli instalační nabídce by byla
+  komplikace bez skutečné potřeby.
+- **`screen.orientation.lock()`.** Patří do D3: zamknout landscape by přišpendlilo
+  hru k rozložení, které D3 ještě nepostavilo, a zamknout portrait by rozbilo
+  world mód.
 
 ### D3. Rozložení na šířku
 
@@ -245,15 +250,12 @@ Zbývá z původního seznamu:
 | **2** | A3 lehčí level 1 · náklad na vagónech (lvl 1–2) · A4 tečky u čísla | Dítě konečně chápe zadání | ✅ |
 | **3** | C1 průběžný semafor · C2 adaptivní obtížnost · C3 zámek resetu | Hra přestane trestat | ✅ |
 | **4** | B1 konfety + delší odjezd · B2 mapa cesty · B3 mašinka s očima | Odměna, kvůli které se dítě vrací | ⏳ odjezd a oči (world) hotové, zbytek zbývá |
-| **5** | D1 pointerId · D2 PWA/fullscreen + vypnutí pull-to-refresh · D3 landscape | Tablet konečně sedne | ⏳ D1 a pull-to-refresh hotové |
+| **5** | D1 pointerId · D2 PWA/fullscreen + vypnutí pull-to-refresh · D3 landscape | Tablet konečně sedne | ⏳ zbývá jen D3 |
 | **6** | E volná jízda / další módy | Životnost hry | ⏳ „Který vagón?“ jako `?mode=world` |
 
 **Co dělat dál, kdyby byl čas jen na jednu věc:** dát tablet dítěti a nechat ho vybrat
 mezi `?mode=world` a `?mode=classic`. Ta odpověď rozhodne, jestli má smysl dělat D3
 a s ním dotáhnout world mód, nebo jít na B1 a C2 v klasickém módu.
-
-**Nejlevnější drobnost s velkým efektem, která pořád leží:** dopsat `touch-action`
-a viewport meta z D2. Je to pár řádků a double-tap zoom umí kolo rozbít.
 
 ---
 

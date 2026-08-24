@@ -1473,10 +1473,15 @@ html[data-mode='world'] .world-badge {
    column inside then loses the bottom of its flexible row (the palette) instead
    of pushing the primary action out of the frame. `overscroll-behavior` stops the
    rubber-band drag that a touch on a non-scrollable page can still produce. */
+/* `manipulation` and deliberately not `none`: it kills double-tap zoom and the
+   300 ms click delay, which is the whole point, but a global `none` would kill
+   the drag that roadmap A2 kept alive beside the tap. The surfaces that actually
+   drag opt into `none` for themselves below. */
 html {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
+  touch-action: manipulation;
 }
 
 body {
@@ -1485,6 +1490,7 @@ body {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
+  touch-action: manipulation;
   font-family: system-ui, sans-serif;
 }
 
