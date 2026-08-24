@@ -12,6 +12,11 @@ const SAD_MS = 1000
  * becomes a verdict on the child. So it falls for a second and then goes back to
  * a smile even though nothing has been fixed yet: the game is disappointed for a
  * moment, never disapproving.
+ *
+ * Leaving `wrong` clears the sadness immediately, whatever the reason — a
+ * corrected train and a child who simply touched a card both count, because
+ * `wrong` can end either way (see the comment below). The timer only ever
+ * covers the case where he leaves the wrong train standing and does nothing.
  */
 export function useEngineMood(phase: GamePhase): 'happy' | 'sad' {
   const [sad, setSad] = useState(false)
@@ -30,7 +35,20 @@ export function useEngineMood(phase: GamePhase): 'happy' | 'sad' {
   const [prevPhase, setPrevPhase] = useState(phase)
   if (phase !== prevPhase) {
     setPrevPhase(phase)
-    if (phase === 'wrong') setSad(true)
+    // Unconditional, not `if (phase === 'wrong') setSad(true)`: the phase can
+    // leave `wrong` on a touch rather than on a correction — `addToTrain` in
+    // useGameState.ts flips `wrong` back to `playing` the instant the child
+    // places or removes any wagon, which for a four-year-old is well inside
+    // the second the timer below is still counting down. Without this branch
+    // covering the leaving side too, `sad` was left `true` forever in that
+    // case: the timer that was supposed to clear it had already been armed
+    // for a `wrong` phase that no longer exists, so its cleanup below just
+    // cancels it, and nothing else ever calls `setSad(false)` again. Setting
+    // it here, from the phase transition itself, means a child who fixes his
+    // train gets the smile back the moment he fixes it, and the timer keeps
+    // its one remaining job: returning the smile when he leaves the wrong
+    // train standing and does nothing.
+    setSad(phase === 'wrong')
   }
   /**
    * The fall lives here: a timer that puts the smile back after `SAD_MS`,
