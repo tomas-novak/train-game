@@ -2,7 +2,11 @@
 
 Main source of truth for all AI coding agents working on this repository.
 
-Kids educational train-building game for a 5-year-old. Fully client-side, no backend.
+Kids educational train-building game. Fully client-side, no backend.
+
+The real player is a **four-year-old who cannot read**, on an Android tablet. The game was
+originally designed for a five-year-old; `roadmap.md` records why that stopped working and what
+changed. Where this file and `roadmap.md` disagree, `roadmap.md` is the later decision.
 
 ---
 
@@ -66,11 +70,16 @@ Child must assemble: correct locomotive + correct wagon type + correct number of
 | 👨👩👧👦 People | Passenger |
 
 ### Levels
-| Level | Numbers | Cargo |
-|---|---|---|
-| ⭐ 1 | 1–3 | Coal, Sand, Milk, Apples |
-| ⭐⭐ 2 | 1–5 | All cargo |
-| ⭐⭐⭐ 3 | 1–10 | All cargo including people |
+| Level | Numbers | Cargo | Wagon choices offered | Cargo drawn on wagons |
+|---|---|---|---|---|
+| ⭐ 1 | 1–2 | Coal, Sand, Milk, Apples | 2 (the right one + 1 distractor) | yes |
+| ⭐⭐ 2 | 1–5 | All cargo | 4 | yes |
+| ⭐⭐⭐ 3 | 1–10 | All cargo including people | all 6 | no |
+
+Level 1 is deliberately 1–2, not 1–3 (`roadmap.md` A3): guessing a wagon type blind out of six was
+1 in 6, and the cargo-to-wagon mapping is abstract categorisation a four-year-old does not have yet.
+The offered wagon types are generated from the current task, and the cargo is drawn inside the wagon
+shells on levels 1–2 so the mapping explains itself, then removed at level 3 so it is learned.
 
 Advance after 3 correct answers per level. Progress saved in `localStorage`.
 
@@ -89,6 +98,13 @@ On failure: shake animation + highlight incorrect element, no game over.
 - All game content (locomotives, wagons, cargo, levels) defined in `/src/data/` — never hardcoded in components
 - No text labels in UI — icons, emojis, and numbers only (child cannot read)
 - Minimum tap target size: 64px
+- Every touch must produce a visible or audible reaction within 100 ms, and it must be **painted**:
+  a DOM mutation behind a main-thread freeze is invisible to the child. Animate compositor
+  properties (`transform`, `opacity`), not `background-color` or `box-shadow`.
+- Sound is generated in code (Web Audio) and speech via `speechSynthesis` in `cs-CZ`. No audio
+  files, no new dependencies. Phrase content lives in `/src/data/phrases.ts`.
+- Green means "the train is correct" and nothing else. Placement feedback is hue-free — see
+  `roadmap.md` C1 and the signal lamp.
 - Keep components dumb — game logic belongs in hooks or utils
 
 ---
@@ -102,7 +118,6 @@ On failure: shake animation + highlight incorrect element, no game over.
 
 ## What Is NOT Built Yet
 
-- Sound effects
 - Multiple languages
 - Parent/stats dashboard
 - Backend / user accounts

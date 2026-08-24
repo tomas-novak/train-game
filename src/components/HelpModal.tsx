@@ -1,4 +1,4 @@
-import { useEffect, useRef, type FC } from 'react'
+import { useDeferredValue, useEffect, useRef, type FC } from 'react'
 import type { Task } from '../types'
 import { WAGONS } from '../data/wagons'
 import { CARGO } from '../data/cargo'
@@ -20,6 +20,19 @@ interface Props {
 export const HelpModal: FC<Props> = ({ open, onClose, task }) => {
   const panelRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<Element | null>(null)
+  /**
+   * The panel holds twenty-one detailed SVGs, and building them all in the same
+   * task as the touch froze the main thread for about 170 ms — measured, not
+   * guessed. Nothing painted inside that window, so the child's tap on the "?"
+   * looked like nothing had happened, which is exactly the reaction that makes
+   * him decide the game is broken.
+   *
+   * So the open happens in two stages. The dim backdrop is one div and lands in
+   * the touch frame; the panel comes from a deferred value, which React builds in
+   * a low-priority render that yields out every few milliseconds, so frames keep
+   * being produced while it is built. Same modal, same look, one frame later.
+   */
+  const contentReady = useDeferredValue(open)
 
   useEffect(() => {
     if (!open) return
@@ -52,7 +65,9 @@ export const HelpModal: FC<Props> = ({ open, onClose, task }) => {
         previousFocusRef.current.focus()
       }
     }
-  }, [open, onClose])
+    // contentReady is a dependency because the panel this focuses does not exist
+    // until the transition has committed it.
+  }, [open, contentReady, onClose])
 
   if (!open) return null
 
@@ -64,6 +79,7 @@ export const HelpModal: FC<Props> = ({ open, onClose, task }) => {
       onClick={onClose}
       onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}
     >
+      {contentReady && (
       <div
         ref={panelRef}
         role="dialog"
@@ -130,6 +146,7 @@ export const HelpModal: FC<Props> = ({ open, onClose, task }) => {
           })}
         </div>
       </div>
+      )}
     </div>
   )
 }
