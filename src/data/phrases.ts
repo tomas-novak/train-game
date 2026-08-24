@@ -6,6 +6,8 @@
  * *stated*. Everything else on screen is a picture or a number.
  */
 
+import { ENGINE_NAME } from './world'
+
 /**
  * Counting out loud, the way a Czech child counts objects: "jedna, dva, tři".
  * Index 0 is unused in play; it is there so the array can be indexed by count.
@@ -54,6 +56,31 @@ export function taskPhrase(count: number, cargoId: string): string {
   const head = wagons(count)
   return with_ === undefined ? `${head}!` : `${head} s ${with_}!`
 }
+
+/**
+ * The task as the world screen says it: the engine asks for the train himself.
+ *
+ * Builds on `taskPhrase` instead of repeating it, so the Czech plural shapes
+ * ("jeden vagon", "dva vagony", "pět vagonů") have exactly one implementation.
+ * The name is nominative and the verb carries the sentence, so no name ever
+ * needs declining here.
+ */
+export function worldTaskPhrase(count: number, cargoId: string): string {
+  return `${ENGINE_NAME} chce ${taskPhrase(count, cargoId)}`
+}
+
+/**
+ * The round closes with a story instead of a score — roadmap B3, world only.
+ *
+ * Deliberately free of the cargo noun. Naming the load would need it in the
+ * accusative and that is a second declension table for one sentence, so these
+ * lines end the journey rather than describe the freight.
+ */
+export const STORY_PHRASES: readonly string[] = [
+  `${ENGINE_NAME} to všechno odvezl do města!`,
+  `Ve městě už čekají. ${ENGINE_NAME} to zvládl!`,
+  `${ENGINE_NAME} jede spát do depa. Dobrá práce!`,
+]
 
 /** Said as each wagon lands, so the count is heard as well as seen. */
 export function countPhrase(count: number): string {

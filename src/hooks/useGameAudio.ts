@@ -2,8 +2,17 @@ import { useCallback, useEffect, useRef } from 'react'
 import type { Task } from '../types'
 import type { GamePhase } from './useGameState'
 import type { SpeechApi } from './useSpeech'
-import { countPhrase, DEPART_PHRASES, PRAISE_PHRASES, RETRY_PHRASES, taskPhrase } from '../data/phrases'
+import {
+  countPhrase,
+  DEPART_PHRASES,
+  PRAISE_PHRASES,
+  RETRY_PHRASES,
+  STORY_PHRASES,
+  taskPhrase,
+  worldTaskPhrase,
+} from '../data/phrases'
 import { playCheer, playDepartureRoll, playOops } from '../utils/sfx'
+import { readMode } from '../utils/mode'
 
 /**
  * Everything the game says and plays *because of a change in the game*, as
@@ -13,6 +22,25 @@ import { playCheer, playDepartureRoll, playOops } from '../utils/sfx'
  *
  * Kept out of App on purpose: components stay dumb, and this is game logic.
  */
+
+/**
+ * Whether this session is the world screen — read once, at module load, the
+ * same way `useGameState.ts` reads its own `IS_WORLD` (see the comment there):
+ * a mode change is a reload, so this file never needs to notice a mode switch
+ * while it is running, only pick once which task sentence and which closing
+ * line it uses.
+ */
+const IS_WORLD = readMode() === 'world'
+
+/**
+ * The task sentence for this screen — named by the engine in world mode, plain
+ * in classic. One function so every place that speaks the task (the round's
+ * start, a deliberate re-ask, and the repeat after a wrong train) says exactly
+ * the same sentence.
+ */
+function taskSentence(task: Task): string {
+  return IS_WORLD ? worldTaskPhrase(task.count, task.cargo.id) : taskPhrase(task.count, task.cargo.id)
+}
 
 /**
  * How long a tapped wagon spends in the air: App's `FLY_MS`. The number is asked
@@ -90,7 +118,7 @@ export function useGameAudio({ phase, task, wagonCount, placeSeq, speech }: Args
     lastTaskSpeechRef.current = now
     const current = taskRef.current
     announcedRef.current = current
-    speak(taskPhrase(current.count, current.cargo.id), 'task')
+    speak(taskSentence(current), 'task')
   }, [speak])
 
   const noteGesture = useCallback(() => {
@@ -118,7 +146,7 @@ export function useGameAudio({ phase, task, wagonCount, placeSeq, speech }: Args
     if (phase !== 'playing') return
     if (announcedRef.current === task) return
     announcedRef.current = task
-    speak(taskPhrase(task.count, task.cargo.id), 'task')
+    speak(taskSentence(task), 'task')
   }, [task, phase, speak])
 
   /**
@@ -181,7 +209,10 @@ export function useGameAudio({ phase, task, wagonCount, placeSeq, speech }: Args
     }
     if (phase === 'celebrating') {
       playCheer()
-      speak(pick(PRAISE_PHRASES), 'task')
+      // The praise is the reflex; the story is the point of the round closing.
+      // One utterance, not two queued ones, so a tap on the next button cuts it
+      // off cleanly instead of leaving a sentence talking over the new task.
+      speak(IS_WORLD ? `${pick(PRAISE_PHRASES)} ${pick(STORY_PHRASES)}` : pick(PRAISE_PHRASES), 'task')
       return
     }
     if (phase === 'wrong') {
@@ -189,7 +220,7 @@ export function useGameAudio({ phase, task, wagonCount, placeSeq, speech }: Args
       // child who cannot read has no other way to check what was asked.
       playOops()
       const t = taskRef.current
-      speak(`${pick(RETRY_PHRASES)} ${taskPhrase(t.count, t.cargo.id)}`, 'task')
+      speak(`${pick(RETRY_PHRASES)} ${taskSentence(t)}`, 'task')
       announcedRef.current = t
     }
   }, [phase, speak, dropPendingCounts])

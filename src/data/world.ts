@@ -22,6 +22,17 @@
  * is standing on it. There are no shadows to do this job.
  */
 
+/**
+ * The engine's name — roadmap B3, world mode only.
+ *
+ * Used in the FIRST CASE and nowhere else, which is a design decision rather
+ * than a shortcut: "Bafík chce dva vagony s uhlím" keeps the whole name on this
+ * one line, so changing it is a one-line change. "Pomoz Bafíkovi" would need a
+ * declension table and the name would spread into phrases.ts as a pattern that
+ * every future name has to be taught.
+ */
+export const ENGINE_NAME = 'Bafík'
+
 /** A lobe of a hill range: centre and radius in the range's own 1000-wide box. */
 export interface Lobe {
   cx: number

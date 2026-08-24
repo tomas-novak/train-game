@@ -15,6 +15,11 @@ export interface TrainIcon {
    * head, but he can match a milk bottle to a milk bottle. Locomotives ignore it.
    */
   showCargo?: string
+  /**
+   * The engine's expression — roadmap B3, and only the world-mode drawings in
+   * `svgs.tsx` read it. Everything else ignores it, exactly like `showCargo`.
+   */
+  mood?: 'happy' | 'sad'
 }
 
 export interface Locomotive {

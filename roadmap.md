@@ -33,7 +33,7 @@ Celá sekce A je hotová a zmergovaná (PR #11, merge `8d1b609`). Hotové je i C
 | A5 ikona místo „Jet!“ | ✅ hotovo | `App.tsx`, `index.css` |
 | B1 konfety, delší odjezd, tempo dítěte | ✅ hotovo | `components/NextButton.tsx`, `hooks/useGameState.ts` (`CELEBRATE_FALLBACK_MS`) |
 | B2 mapa cesty / sbírání | ☐ nezačato | pořád hvězdičky a tečky |
-| B3 mašinka s očima, příběh | ⏳ částečně | oči a úsměv jen ve world módu, jméno a příběh nikde |
+| B3 mašinka s očima, příběh | ✅ hotovo | `data/world.ts` (`ENGINE_NAME`), `data/phrases.ts` (`worldTaskPhrase`, `STORY_PHRASES`), `types/index.ts` (`mood`), `components/svgs.tsx`, `hooks/useEngineMood.ts`, `hooks/useGameAudio.ts`, `components/TrackZone.tsx`, `App.tsx` — jen ve world módu |
 | C1 semafor zezelená sám | ✅ hotovo | `hooks/useGameState.ts` (`isRight`), `components/TrackZone.tsx` |
 | C2 adaptivní obtížnost | ✅ hotovo | `utils/progress.ts`, `hooks/useGameState.ts` |
 | C3 zámek resetu | ✅ hotovo | `App.tsx` (`RESET_HOLD_MS`), podržení 900 ms |
@@ -142,9 +142,21 @@ nejsou.
 
 ### B3. Hra nemá postavu ani příběh
 
-**⏳ Částečně.** Ve world módu má lokomotiva oči a úsměv a ve vagónech i na nádraží sedí
-zvířátka. V klasickém módu je vlak schválně nezměněný, je to kontrolní obrazovka pro
-srovnání. Jméno mašinky, smutná tvář při chybě a mikro-příběh u cíle nejsou.
+**✅ Hotovo, jen ve world módu.** Mašinka má jméno (`ENGINE_NAME = 'Bafík'` v
+`data/world.ts`, použité jen v 1. pádu — „Bafík chce dva vagony s uhlím!“, přes
+`worldTaskPhrase` v `data/phrases.ts`, která staví na `taskPhrase`, takže skloňování
+vagonů zůstává na jednom místě). Při špatném vlaku se tvář na `SAD_MS = 1000` ms stáhne
+do smutku a pak se sama vrátí k úsměvu, i kdyby vlak pořád nebyl opravený
+(`hooks/useEngineMood.ts`) — beze změny barvy, jde jen o jiný tvar úst
+(`MOUTH_HAPPY`/`MOUTH_SAD` v `components/svgs.tsx`). Po pochvale na konci kola přijde
+jedna věta mikro-příběhu (`STORY_PHRASES`), řečená jako pokračování téže věty
+(`hooks/useGameAudio.ts`).
+
+V klasickém módu je vlak schválně beze změny: je to kontrolní obrazovka, na které stojí
+srovnání rozhodující o D3, a postava na obou obrazovkách by z toho udělala měření dvou
+proměnných místo jedné. Nese to i struktura kódu — `Face` v `components/svgs.tsx` vrací
+`null`, kdykoli `readMode() !== 'world'`, takže klasická lokomotiva fyzicky nemůže
+vykreslit ústa, ať se jí pošle jakýkoli `mood`.
 
 ---
 
@@ -255,7 +267,7 @@ Zbývá z původního seznamu:
 | **1** | A2 tap-to-place · A1 zvuky + český hlas · A5 ikona místo „Jet!“ | Odstraní frustraci z ovládání a hru „ozvučí“ | ✅ |
 | **2** | A3 lehčí level 1 · náklad na vagónech (lvl 1–2) · A4 tečky u čísla | Dítě konečně chápe zadání | ✅ |
 | **3** | C1 průběžný semafor · C2 adaptivní obtížnost · C3 zámek resetu | Hra přestane trestat | ✅ |
-| **4** | B1 konfety + delší odjezd · B2 mapa cesty · B3 mašinka s očima | Odměna, kvůli které se dítě vrací | ⏳ B1 hotové, B2 a B3 zbývají |
+| **4** | B1 konfety + delší odjezd · B2 mapa cesty · B3 mašinka s očima | Odměna, kvůli které se dítě vrací | ⏳ B1 a B3 hotové, B2 zbývá |
 | **5** | D1 pointerId · D2 PWA/fullscreen + vypnutí pull-to-refresh · D3 landscape | Tablet konečně sedne | ⏳ zbývá jen D3 |
 | **6** | E volná jízda / další módy | Životnost hry | ⏳ „Který vagón?“ jako `?mode=world` |
 

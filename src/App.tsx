@@ -4,6 +4,7 @@ import { useTablet } from './hooks/useTablet'
 import { useWakeLock } from './hooks/useWakeLock'
 import { useSpeech } from './hooks/useSpeech'
 import { useGameAudio } from './hooks/useGameAudio'
+import { useEngineMood } from './hooks/useEngineMood'
 import { CORRECT_PER_LEVEL } from './data/levels'
 import { TaskHero } from './components/TaskHero'
 import { HelpModal } from './components/HelpModal'
@@ -324,6 +325,15 @@ export default function App() {
     placeSeq: game.placeSeq,
     speech,
   })
+  /**
+   * The engine's expression — roadmap B3. Computed unconditionally (hooks may
+   * not be called conditionally), but only ever handed to `TrackZone` on the
+   * world path below: classic's locomotive drawings render no mouth at all
+   * (`FACE` in svgs.tsx is false there), so this value is inert on that screen
+   * whether or not it is passed, and it is kept off the classic call anyway so
+   * the control screen's props stay exactly what they were before this task.
+   */
+  const engineMood = useEngineMood(game.phase)
   /**
    * How tall the band the train stands in is — and in world mode it is 36 px
    * taller than it was, because the measured whole-screen objection was that the
@@ -1526,6 +1536,9 @@ export default function App() {
             /* The waiting stock, standing at the far end of these very rails. */
             offer={worldOffer}
             onSizes={isWorld ? handleWorldSizes : undefined}
+            /* World mode only — roadmap B3. Classic's call carries no `mood` at
+               all, not even the default, so its props are unchanged by this task. */
+            mood={isWorld ? engineMood : undefined}
           />
 
           {/* Send the train. Icon only: one disc, one arrow, no word anywhere near

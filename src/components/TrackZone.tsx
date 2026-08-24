@@ -510,6 +510,13 @@ interface Props {
    * its wheels to land on the same rail head as a coupled wagon's.
    */
   onSizes?: (s: { coupled: number; offer: number; bottomPad: number }) => void
+  /**
+   * The engine's expression — roadmap B3, world mode only. Applies to the engine
+   * standing on these rails, never to a palette card: a sad face on an unplaced
+   * card would be reacting to something that card did not do. Undefined draws the
+   * default happy face, exactly as before this prop existed.
+   */
+  mood?: 'happy' | 'sad'
 }
 
 export const TrackZone = forwardRef<HTMLDivElement, Props>(
@@ -531,6 +538,7 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
       choiceCount = 0,
       offer = null,
       onSizes,
+      mood,
     },
     ref,
   ) => {
@@ -1443,7 +1451,10 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
                       ...(isPending ? { visibility: 'hidden' as const } : null),
                     }}
                   >
-                    <Icon size={item.kind === 'loco' ? locoSz : wagonSz} />
+                    <Icon
+                      size={item.kind === 'loco' ? locoSz : wagonSz}
+                      {...(item.kind === 'loco' ? { mood } : null)}
+                    />
                     {/* Somebody is riding on it — see `Rider`. Only on the wagons:
                         the engine already has a face of its own, and only once the
                         wagon has actually landed, so the flying copy and the wagon
