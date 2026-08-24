@@ -1789,6 +1789,16 @@ html[data-mode='world'] {
   --go-pink: #8f4a75;
   --go-dead: #8f4a75;
   --go-spent: #c79cb6;
+  /* The world palette quiets every control it draws — measured above as
+     `--go-pink` dropping from L65.3/S88.7 to L42.5/S31.8 for the PRIMARY
+     control, the one on screen for the whole round. The next button is only a
+     TRANSIENT control, on screen for the celebration alone, but at the
+     classic `#f2a13c` (L59.2/S87.5) it was louder than the muted go button
+     sitting right under it, which inverts the hierarchy this palette exists
+     to state. So it gets the same treatment, roughly the same drop applied to
+     pink: L38.0 (was 59.2, -21.2) and S32.0 (was 87.5, -55.5), landing on
+     `#806442` — still amber, not the go button's plum and not green. */
+  --next-amber: #806442;
   /* And the disc is smaller here than on the classic screen, which is the one
      place this mode contradicts section A's "one primary action, huge".
      Measured: at 768x1024 the button came out 234x234, LARGER than the 216x121
