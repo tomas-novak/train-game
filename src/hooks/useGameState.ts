@@ -43,13 +43,14 @@ function loadProgress(): GameProgress {
         return {
           level: Math.min(Math.max(1, parsed.level), LEVELS.length),
           correctInLevel: Math.max(0, parsed.correctInLevel),
+          wrongStreak: 0,
         }
       }
     }
   } catch {
     // ignore malformed data
   }
-  return { level: 1, correctInLevel: 0 }
+  return { level: 1, correctInLevel: 0, wrongStreak: 0 }
 }
 
 function saveProgress(progress: GameProgress) {
@@ -363,7 +364,7 @@ export function useGameState(): GameState {
   }, [applyTrain, phase, progress, setPhase])
 
   const resetProgress = useCallback(() => {
-    const p = { level: 1, correctInLevel: 0 }
+    const p = { level: 1, correctInLevel: 0, wrongStreak: 0 }
     saveProgress(p)
     setProgress(p)
     setTask(generateTask(LEVELS[0]))

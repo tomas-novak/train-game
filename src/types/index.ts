@@ -77,7 +77,14 @@ export interface Task {
 
 export interface GameProgress {
   level: number
+  /**
+   * Clean rounds in a row at this level. A round with a wrong submission in it
+   * resets this to zero, which is the whole of roadmap C2: the level used to
+   * rise every third round no matter how many mistakes were in them.
+   */
   correctInLevel: number
+  /** Rounds with a mistake in them, back to back. Reaching WRONG_TO_DEMOTE drops the level. */
+  wrongStreak: number
 }
 
 export type ValidationResult = {
