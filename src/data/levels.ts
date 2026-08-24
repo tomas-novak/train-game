@@ -39,7 +39,10 @@ export const LEVELS: LevelDef[] = [
     cargoHints: true,
   },
   {
-    maxNumber: 10,
+    // Roadmap C2. Ten was a five-year-old's ceiling. The dots under the numeral
+    // and the empty berths beside the track still handle ten (roadmap A4) and
+    // COUNT_WORDS still speaks it, so this is a knob and not a demolition.
+    maxNumber: 5,
     cargoIds: ['coal', 'sand', 'milk', 'fuel', 'apples', 'parcels', 'cars', 'logs', 'people'],
     wagonTypeIds: ['hopper', 'tank', 'box', 'flatcar', 'passenger', 'logcar'],
     locomotiveIds: ['steam', 'electric', 'diesel'],

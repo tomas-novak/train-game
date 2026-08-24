@@ -35,7 +35,7 @@ Celá sekce A je hotová a zmergovaná (PR #11, merge `8d1b609`). Hotové je i C
 | B2 mapa cesty / sbírání | ☐ nezačato | pořád hvězdičky a tečky |
 | B3 mašinka s očima, příběh | ⏳ částečně | oči a úsměv jen ve world módu, jméno a příběh nikde |
 | C1 semafor zezelená sám | ✅ hotovo | `hooks/useGameState.ts` (`isRight`), `components/TrackZone.tsx` |
-| C2 adaptivní obtížnost | ☐ nezačato | level jde pořád jen nahoru |
+| C2 adaptivní obtížnost | ✅ hotovo | `utils/progress.ts`, `hooks/useGameState.ts` |
 | C3 zámek resetu | ✅ hotovo | `App.tsx` (`RESET_HOLD_MS`), podržení 900 ms |
 | D1 pointerId | ✅ hotovo | `App.tsx`, vyřešeno spolu s A2 |
 | D2 PWA / fullscreen / gesta | ⏳ částečně | pull-to-refresh vypnutý, zbytek ne |
@@ -163,13 +163,15 @@ zůstaly jen na odeslání špatného vlaku.
 
 ### C2. Obtížnost jde jen nahoru
 
-**☐ Nezačato.** `nextRound` v `hooks/useGameState.ts` pořád jen přičítá a level se
-zvyšuje `Math.min(level + 1, …)`. Chybí:
-
-- snížit level (nebo aspoň `maxNumber`) po 2–3 chybách za sebou,
-- počítat správné odpovědi za sebou, ne kumulativně,
-- strop levelu 3 stáhnout z 10 na ~5. World mód má vlastní strop 2
-  (`WORLD_MAX_COUNT` v `data/world.ts`), klasický mód má pořád 1–10.
+**✅ Hotovo.** Jednotkou je čisté kolo, ne odpověď: kolo v této hře může skončit
+jedině úspěchem — `nextRound` se volá z časovače oslavy nebo z tlačítka dál, nikdy
+z chyby, a po špatném vlaku dítě pokračuje na tom samém kole, dokud není správně.
+Kdyby se počítalo za jednotlivou odpověď, každé kolo by ho vynulovalo tím úspěchem,
+kterým vždycky končí, a demotion by byl mrtvý kód, co vypadá hotově. `advanceProgress`
+v `utils/progress.ts` proto dostává `roundWasDirty` — příznak, že se během kola aspoň
+jednou odeslal špatný vlak — a dvě taková kola za sebou snižují level o jeden.
+Level jde nahoru po třech čistých kolech za sebou. Strop levelu 3 je stažený z 10 na 5
+(`data/levels.ts`); world mód má pořád vlastní strop 2 (`WORLD_MAX_COUNT` v `data/world.ts`).
 
 ### C3. Tlačítko resetu je past
 
@@ -241,7 +243,7 @@ Zbývá z původního seznamu:
 |---|---|---|---|
 | **1** | A2 tap-to-place · A1 zvuky + český hlas · A5 ikona místo „Jet!“ | Odstraní frustraci z ovládání a hru „ozvučí“ | ✅ |
 | **2** | A3 lehčí level 1 · náklad na vagónech (lvl 1–2) · A4 tečky u čísla | Dítě konečně chápe zadání | ✅ |
-| **3** | C1 průběžný semafor · C2 adaptivní obtížnost · C3 zámek resetu | Hra přestane trestat | ⏳ C1 a C3 hotové, C2 zbývá |
+| **3** | C1 průběžný semafor · C2 adaptivní obtížnost · C3 zámek resetu | Hra přestane trestat | ✅ |
 | **4** | B1 konfety + delší odjezd · B2 mapa cesty · B3 mašinka s očima | Odměna, kvůli které se dítě vrací | ⏳ odjezd a oči (world) hotové, zbytek zbývá |
 | **5** | D1 pointerId · D2 PWA/fullscreen + vypnutí pull-to-refresh · D3 landscape | Tablet konečně sedne | ⏳ D1 a pull-to-refresh hotové |
 | **6** | E volná jízda / další módy | Životnost hry | ⏳ „Který vagón?“ jako `?mode=world` |

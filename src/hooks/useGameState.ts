@@ -1,11 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type { Task, GameProgress, ValidationResult, TrainItem, KeyedTrainItem, WagonType } from '../types'
-import { LEVELS, CORRECT_PER_LEVEL } from '../data/levels'
+import { LEVELS } from '../data/levels'
 import { pickWanted, validateTrain } from '../utils/validation'
 import { generateTask } from '../utils/random'
 import { canAddToTrain, placedLoco, placedWagons, trainTap } from '../utils/train'
 import type { TrainTap } from '../utils/train'
 import { readMode } from '../utils/mode'
+import { advanceProgress, parseProgress, INITIAL_PROGRESS } from '../utils/progress'
 
 /**
  * May a wagon of a different load sweep the coupled load off the rails?
@@ -26,38 +27,31 @@ const ALLOW_REPLACE = !IS_WORLD
  */
 const GATE_PICK = IS_WORLD
 
-const STORAGE_KEY = 'trainGameProgress.sky'
-// Key intentionally versioned with ".sky" to reset progress when the Sky theme
-// redesign shipped — avoids loading stale progress from the old schema.
+/**
+ * Versioned because `correctInLevel` changed MEANING in this commit: it used to
+ * be a cumulative tally and it is now a streak of clean rounds. Old values would
+ * parse fine and mean something else, which is worse than starting over, so the
+ * key moves and the old one is simply abandoned.
+ */
+const STORAGE_KEY = 'trainGameProgress.v2'
 
 const DEPART_MS = 1800
 const CELEBRATE_MS = 2200
 const PULSE_MS = 600
 
-function loadProgress(): GameProgress {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw) as GameProgress
-      if (typeof parsed.level === 'number' && typeof parsed.correctInLevel === 'number') {
-        return {
-          level: Math.min(Math.max(1, parsed.level), LEVELS.length),
-          correctInLevel: Math.max(0, parsed.correctInLevel),
-          wrongStreak: 0,
-        }
-      }
-    }
-  } catch {
-    // ignore malformed data
-  }
-  return { level: 1, correctInLevel: 0, wrongStreak: 0 }
-}
-
 function saveProgress(progress: GameProgress) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
 }
 
-const initialProgress = loadProgress()
+function readRaw(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+const initialProgress = parseProgress(readRaw(), LEVELS.length)
 
 export type GamePhase = 'playing' | 'departing' | 'celebrating' | 'wrong'
 
@@ -184,6 +178,15 @@ export function useGameState(): GameState {
   // be a frame stale — which is long enough for a tap during the 1.8 s departure
   // to rebuild an already-validated train and still collect the round.
   const phaseRef = useRef<GamePhase>('playing')
+  /**
+   * Did the child submit a wrong train during THIS round?
+   *
+   * A boolean, not a count: two presses of the go button on the same unchanged
+   * wrong train are one mistake. A ref and not state, because it is written inside
+   * a pointer event, where `phase` in the render closure can be a frame stale —
+   * the same reason `phaseRef`, `trainRef` and `pendingKeyRef` are refs.
+   */
+  const roundDirtyRef = useRef(false)
   /** Sets the phase and its synchronous mirror together, so they cannot drift. */
   const setPhase = useCallback(
     (next: GamePhase | ((p: GamePhase) => GamePhase)) => {
@@ -336,6 +339,7 @@ export function useGameState(): GameState {
     if (result.allCorrect) {
       setPhase('departing')
     } else {
+      roundDirtyRef.current = true
       setPhase('wrong')
       setShakeKey((k) => k + 1)
       if (pulseTimerRef.current !== null) clearTimeout(pulseTimerRef.current)
@@ -345,28 +349,24 @@ export function useGameState(): GameState {
   }, [task, trainItems, setPhase, visibleItems])
 
   const nextRound = useCallback(() => {
-    const newProgress = { ...progress }
-    if (phase === 'celebrating') {
-      newProgress.correctInLevel = progress.correctInLevel + 1
-      if (newProgress.correctInLevel >= CORRECT_PER_LEVEL) {
-        const maxLevel = LEVELS.length
-        newProgress.level = Math.min(progress.level + 1, maxLevel)
-        newProgress.correctInLevel = 0
-      }
-      saveProgress(newProgress)
-      setProgress(newProgress)
-    }
-    const nextLevelDef = LEVELS[Math.min(newProgress.level - 1, LEVELS.length - 1)]
-    setTask(generateTask(nextLevelDef))
+    // The guard is new and it is what makes the next button safe: the button and
+    // the fallback timer can both fire for the same celebration, and without this
+    // the second one would take a whole round away from the child.
+    if (phaseRef.current !== 'celebrating') return
+    const newProgress = advanceProgress(progress, roundDirtyRef.current, LEVELS.length)
+    saveProgress(newProgress)
+    setProgress(newProgress)
+    roundDirtyRef.current = false
+    setTask(generateTask(LEVELS[newProgress.level - 1]))
     applyTrain([])
     setValidation(null)
     setPhase('playing')
-  }, [applyTrain, phase, progress, setPhase])
+  }, [applyTrain, progress, setPhase])
 
   const resetProgress = useCallback(() => {
-    const p = { level: 1, correctInLevel: 0, wrongStreak: 0 }
-    saveProgress(p)
-    setProgress(p)
+    saveProgress(INITIAL_PROGRESS)
+    setProgress(INITIAL_PROGRESS)
+    roundDirtyRef.current = false
     setTask(generateTask(LEVELS[0]))
     applyTrain([])
     setValidation(null)

@@ -57,7 +57,7 @@ changed. Where this file and `roadmap.md` disagree, `roadmap.md` is the later de
 ## Game Rules & Logic
 
 ### Task format
-Each round shows the child: **[number 1–10] + [cargo icon]**
+Each round shows the child: **[number 1–5] + [cargo icon]**
 Child must assemble: correct locomotive + correct wagon type + correct number of wagons.
 
 ### Cargo → Wagon mapping
@@ -74,14 +74,14 @@ Child must assemble: correct locomotive + correct wagon type + correct number of
 |---|---|---|---|---|
 | ⭐ 1 | 1–2 | Coal, Sand, Milk, Apples | 2 (the right one + 1 distractor) | yes |
 | ⭐⭐ 2 | 1–5 | All cargo | 4 | yes |
-| ⭐⭐⭐ 3 | 1–10 | All cargo including people | all 6 | no |
+| ⭐⭐⭐ 3 | 1–5 | All cargo including people | all 6 | no |
 
 Level 1 is deliberately 1–2, not 1–3 (`roadmap.md` A3): guessing a wagon type blind out of six was
 1 in 6, and the cargo-to-wagon mapping is abstract categorisation a four-year-old does not have yet.
 The offered wagon types are generated from the current task, and the cargo is drawn inside the wagon
 shells on levels 1–2 so the mapping explains itself, then removed at level 3 so it is learned.
 
-Advance after 3 correct answers per level. Progress saved in `localStorage`.
+Advance after 3 clean rounds in a row (a round with a wrong submission in it is not clean). Two rounds with a mistake, back to back, drop the level by one. Roadmap C2; the logic is a pure function in src/utils/progress.ts. Progress saved in localStorage.
 
 ### Validation
 Correct = locomotive selected + correct wagon type + correct wagon count.
