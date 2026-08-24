@@ -11,6 +11,7 @@ import { DragPalette } from './components/DragPalette'
 import { WorldChoice } from './components/WorldChoice'
 import { TrackZone } from './components/TrackZone'
 import { Celebration } from './components/Celebration'
+import { NextButton } from './components/NextButton'
 import { MuteButton } from './components/MuteButton'
 import { Scene } from './components/Scene'
 import { WorldScene } from './components/WorldScene'
@@ -1657,6 +1658,15 @@ export default function App() {
               mode does not cover the place it just spent the whole round building
               — see `WorldCheer`. */}
           {game.phase === 'celebrating' && (isWorld ? <WorldCheer /> : <Celebration />)}
+
+          {game.phase === 'celebrating' && (
+            <div
+              className="absolute inset-x-0 z-50 flex justify-center"
+              style={{ bottom: 'var(--go-pop-room)' }}
+            >
+              <NextButton onPress={game.nextRound} />
+            </div>
+          )}
 
           {/* reset flash */}
           {resetting && (

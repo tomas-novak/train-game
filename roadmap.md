@@ -31,7 +31,7 @@ Celá sekce A je hotová a zmergovaná (PR #11, merge `8d1b609`). Hotové je i C
 | A3 lehčí level 1 + náklad na vagónech | ✅ hotovo | `data/levels.ts`, `data/cargo.ts`, `components/svgs.tsx`, `utils/random.ts` |
 | A4 tečky u čísla + živý čítač | ✅ hotovo | `components/CountRow.tsx`, `components/TaskHero.tsx`, `components/TrackZone.tsx` |
 | A5 ikona místo „Jet!“ | ✅ hotovo | `App.tsx`, `index.css` |
-| B1 konfety, delší odjezd, tempo dítěte | ⏳ částečně | odjezd hotový, konfety pořád mrtvý kód, auto-advance zůstal |
+| B1 konfety, delší odjezd, tempo dítěte | ✅ hotovo | `components/NextButton.tsx`, `hooks/useGameState.ts` (`CELEBRATE_FALLBACK_MS`) |
 | B2 mapa cesty / sbírání | ☐ nezačato | pořád hvězdičky a tečky |
 | B3 mašinka s očima, příběh | ⏳ částečně | oči a úsměv jen ve world módu, jméno a příběh nikde |
 | C1 semafor zezelená sám | ✅ hotovo | `hooks/useGameState.ts` (`isRight`), `components/TrackZone.tsx` |
@@ -120,14 +120,20 @@ už nejsou signalizované obráceně (houkačka se dřív ozvala i na špatný v
 
 ### B1. Odměna je moc krátká a málo výrazná
 
-**⏳ Částečně.** Odjezd už je skutečný: houkačka, kouř, vlak se rozjede po kolejích.
-Zbývá ale to hlavní z tohohle bodu:
+**✅ Hotovo.** Odjezd je skutečný: houkačka, kouř, vlak se rozjede po kolejích. A obě
+zbývající věci z tohohle bodu jsou dotažené:
 
-- **Konfety jsou pořád mrtvý kód.** `components/CelebrationScreen.tsx` používá
-  `canvas-confetti`, ale nikdo ji nevolá; `App.tsx` renderuje `Celebration` (SVG hvězdy)
-  a ve world módu `WorldCheer`. Buď zapojit, nebo ten soubor smazat.
-- **Auto-advance zůstal.** `CELEBRATE_MS = 2200` v `hooks/useGameState.ts` a hra se
-  přepne sama. Velké zelené tlačítko „další“, aby si tempo určilo dítě, není.
+- **Konfety už nejsou mrtvý kód, protože už vůbec nejsou.** `components/CelebrationScreen.tsx`
+  používal `canvas-confetti`, ale nikdo ho nevolal; `App.tsx` renderuje `Celebration`
+  (SVG hvězdy) a ve world módu `WorldCheer`, a to zůstává. Soubor i závislost jsou smazané
+  místo zapojené — je to přesně ten fullscreen `bg-yellow-100` wash s emoji, proti kterému
+  se `WorldCheer.tsx` vymezuje celým odstavcem opřeným o měření reference, a oba módy už
+  mají oslavu navrženou proti té referenci.
+- **Auto-advance je nahrazený tlačítkem.** `components/NextButton.tsx` — ikona, žádné
+  slovo, `--next-amber`, vlastní barva mimo zelenou/červenou/`--go-pink` — se objeví nad
+  oslavou a kolo posune hned na ťuknutí. `CELEBRATE_MS = 2200` v `hooks/useGameState.ts`
+  se přejmenoval na `CELEBRATE_FALLBACK_MS = 8000`: je to teď jen pojistka pro dítě, které
+  tlačítko nezmáčkne, ne to, co tempo určuje.
 
 ### B2. Postup je zobrazený abstraktně
 
@@ -249,7 +255,7 @@ Zbývá z původního seznamu:
 | **1** | A2 tap-to-place · A1 zvuky + český hlas · A5 ikona místo „Jet!“ | Odstraní frustraci z ovládání a hru „ozvučí“ | ✅ |
 | **2** | A3 lehčí level 1 · náklad na vagónech (lvl 1–2) · A4 tečky u čísla | Dítě konečně chápe zadání | ✅ |
 | **3** | C1 průběžný semafor · C2 adaptivní obtížnost · C3 zámek resetu | Hra přestane trestat | ✅ |
-| **4** | B1 konfety + delší odjezd · B2 mapa cesty · B3 mašinka s očima | Odměna, kvůli které se dítě vrací | ⏳ odjezd a oči (world) hotové, zbytek zbývá |
+| **4** | B1 konfety + delší odjezd · B2 mapa cesty · B3 mašinka s očima | Odměna, kvůli které se dítě vrací | ⏳ B1 hotové, B2 a B3 zbývají |
 | **5** | D1 pointerId · D2 PWA/fullscreen + vypnutí pull-to-refresh · D3 landscape | Tablet konečně sedne | ⏳ zbývá jen D3 |
 | **6** | E volná jízda / další módy | Životnost hry | ⏳ „Který vagón?“ jako `?mode=world` |
 

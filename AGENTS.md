@@ -16,7 +16,7 @@ changed. Where this file and `roadmap.md` disagree, `roadmap.md` is the later de
 - **Styling**: Tailwind CSS only — no shadcn/ui, no component libraries
 - **Build**: Vite
 - **Hosting**: Vercel (static)
-- **Packages**: canvas-confetti (celebration effect)
+- **Packages**: none at runtime; vitest for unit tests
 
 ---
 
@@ -85,7 +85,7 @@ Advance after 3 clean rounds in a row (a round with a wrong submission in it is 
 
 ### Validation
 Correct = locomotive selected + correct wagon type + correct wagon count.
-On success: confetti + star animation, auto-advance after 2.5s.
+On success: star animation (classic) or rising balloons (world), then the child taps the next button. An 8 s fallback advances by itself if he does not.
 On failure: shake animation + highlight incorrect element, no game over.
 
 ---

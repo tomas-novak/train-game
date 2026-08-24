@@ -36,7 +36,15 @@ const GATE_PICK = IS_WORLD
 const STORAGE_KEY = 'trainGameProgress.v2'
 
 const DEPART_MS = 1800
-const CELEBRATE_MS = 2200
+/**
+ * How long the celebration waits before it moves on BY ITSELF.
+ *
+ * The child sets the pace with the next button; this is only the safety net for
+ * a child who does not press it, so the game never traps him on a screen he
+ * cannot leave. Deliberately generous. It was 2200 ms of auto-advance with no
+ * button at all, which is what roadmap B1 objected to.
+ */
+const CELEBRATE_FALLBACK_MS = 8000
 const PULSE_MS = 600
 
 function saveProgress(progress: GameProgress) {
@@ -386,7 +394,7 @@ export function useGameState(): GameState {
     if (phase === 'celebrating') {
       const timer = setTimeout(() => {
         nextRound()
-      }, CELEBRATE_MS)
+      }, CELEBRATE_FALLBACK_MS)
       return () => clearTimeout(timer)
     }
   }, [phase, nextRound])

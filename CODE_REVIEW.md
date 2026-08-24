@@ -12,7 +12,6 @@ Keep feedback direct, constructive, and proportionate — this is a toy project,
 - **Language:** TypeScript (strict, no `any`)
 - **Framework:** React (functional components + hooks), Vite
 - **Styling:** Tailwind CSS only — no shadcn/ui, no external component libraries
-- **Packages:** canvas-confetti
 - **Hosting:** Vercel (static)
 
 ## Code Review Focus Areas
