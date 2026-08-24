@@ -82,9 +82,15 @@ Co je dobré vědět k údržbě:
 
 ### A2. Drag & drop je pro čtyřleté ruce moc těžké
 
-**✅ Hotovo.** Ťuknutí položí vagón, rozhodnutí ano/ne padne synchronně už při stisknutí,
-takže jeden dotek nikdy nedostane „ano“ a hned po něm „ne“. Táhnutí zůstalo, drop je
-odpouštivý a druhý prst nebo dlaň už táhnutí nerozbije (tím je hotové i D1).
+**✅ Hotovo.** Ťuknutí položí vagón. Táhnutí zůstalo, drop je odpouštivý a druhý prst nebo
+dlaň už táhnutí nerozbije (tím je hotové i D1).
+
+Jak je rozložená zpětná vazba, protože na tom záleží a protože to není to, co tu stálo
+dřív: při stisknutí se ozve cvaknutí a karta se zmačkne **bez barvy**, a teprve při puštění
+padne závazné ano/ne (`commit` v `App.tsx`, `addToTrain` přepočítá vlak, jak vypadá v tu
+chvíli). Kontrola při stisknutí je jen předběžná. Díky tomu jeden dotek nedostane zelené
+„ano“ a po něm „ne“: když dva prsty stisknou dvě karty a zbývá jedno místo, první puštění
+ho zabere a druhé se odmítne, ale žádné z nich mezitím nic neslíbilo.
 
 ### A3. Level 1 je pro čtyřletého moc těžký
 
@@ -141,9 +147,19 @@ srovnání. Jméno mašinky, smutná tvář při chybě a mikro-příběh u cíl
 ### C1. Zpětná vazba je „všechno nebo nic“
 
 **✅ Hotovo.** Semafor u koleje zezelená sám, jakmile je vlak správně, ještě před
-odesláním, a zelenou nedostane vlak, který tlačítko odmítne. Chyba je rozdělená: špatný
-typ dostane odmítnutí na kartě a ukázání na to, co jde, špatný počet se odmítne na
-kapacitě. Třes obrazovky a červená zůstaly jen na odeslání špatného vlaku.
+odesláním, a zelenou nedostane vlak, který tlačítko odmítne. Třes obrazovky a červená
+zůstaly jen na odeslání špatného vlaku.
+
+Špatný počet se odmítne hned v obou módech (kapacita je počet ze zadání). U špatného
+**typu** se módy schválně liší, a je to rozhodnutí, ne nedodělek:
+
+- **Klasický mód:** vagón, který nesedí na zadání, se **normálně položí**. Který vagón je
+  správný, je otázka, na kterou má odpovědět dítě, a hra mu ji nesmí vzít tím, že by šla
+  zmáčknout jen jedna karta. Verdikt padne, až vlak pošle: semafor mezitím zůstane
+  červený, tlačítko odjezd odmítne a špatné vagóny se označí.
+- **World mód:** kolo je výběr ze tří, takže tam se nesprávný výběr odmítne už na kartě
+  a hra ve stejném snímku ukáže cestu ven. Rozhoduje o tom `pickWanted`
+  v `utils/validation.ts`, které vrací požadovaný typ jen pro world.
 
 ### C2. Obtížnost jde jen nahoru
 
