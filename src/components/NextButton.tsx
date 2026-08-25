@@ -19,8 +19,18 @@ export const NextButton: FC<{ onPress: () => void }> = ({ onPress }) => {
   return (
     <button
       type="button"
+      /* App.tsx's capture-phase handler nudges the palette whenever a press lands
+         outside every `data-touchable` element, on the theory that it hit nothing
+         useful. Without this attribute every tap on this button fired that "you
+         missed" animation once per round, which is a false signal about a press
+         that plainly landed. */
+      data-touchable
       aria-label="Další"
-      className="next-btn touch-none select-none"
+      // `pointer-events-auto`: the wrapping band in App.tsx is `pointer-events-none`
+      // (see the comment there) so touches beside the button reach the palette
+      // instead of being swallowed by the band, which means the button itself has
+      // to opt back in to receive its own presses.
+      className="next-btn touch-none select-none pointer-events-auto"
       style={{ width: size, height: size }}
       onPointerDown={(e) => {
         e.preventDefault()

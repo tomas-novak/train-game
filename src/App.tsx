@@ -326,14 +326,18 @@ export default function App() {
     speech,
   })
   /**
-   * The engine's expression — roadmap B3. Computed unconditionally (hooks may
-   * not be called conditionally), but only ever handed to `TrackZone` on the
-   * world path below: classic's locomotive drawings render no mouth at all
-   * (`FACE` in svgs.tsx is false there), so this value is inert on that screen
-   * whether or not it is passed, and it is kept off the classic call anyway so
-   * the control screen's props stay exactly what they were before this task.
+   * The engine's expression — roadmap B3. The hook itself must still be called
+   * unconditionally (hooks may not be called conditionally), but the phase it
+   * is fed is pinned to `'playing'` outside world mode, so classic's calls to
+   * `setSad`/`setPrevPhase` inside it never fire from a real transition — every
+   * phase change classic ever has is invisible to a hook whose one input never
+   * moves. That used to cost classic an extra render pass of a very large
+   * component on every phase change, for a value classic's `Face` (svgs.tsx,
+   * `FACE` is false there) can never use. Pinning the input rather than
+   * skipping the call makes "world only" a structural fact about this line
+   * instead of an incidental one that the next edit could quietly break.
    */
-  const engineMood = useEngineMood(game.phase)
+  const engineMood = useEngineMood(isWorld ? game.phase : 'playing')
   /**
    * How tall the band the train stands in is — and in world mode it is 36 px
    * taller than it was, because the measured whole-screen objection was that the
@@ -1673,8 +1677,13 @@ export default function App() {
           {game.phase === 'celebrating' && (isWorld ? <WorldCheer /> : <Celebration />)}
 
           {game.phase === 'celebrating' && (
+            // `pointer-events-none` on the band and `-auto` back on the button
+            // itself: this row spans the full width, but the button in it is only
+            // 88 px wide, so without this the row swallowed every touch either
+            // side of the button during the whole celebration — the same dead
+            // zone `WorldCheer` is deliberately `pointer-events-none` to avoid.
             <div
-              className="absolute inset-x-0 z-50 flex justify-center"
+              className="absolute inset-x-0 z-50 flex justify-center pointer-events-none"
               style={{ bottom: 'var(--go-pop-room)' }}
             >
               <NextButton onPress={game.nextRound} />

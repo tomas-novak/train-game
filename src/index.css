@@ -1074,6 +1074,14 @@ html[data-mode='world'] .world-badge {
   animation: go-ring 700ms cubic-bezier(0.25, 0.8, 0.35, 1);
 }
 
+/* No `:active` squash rule here on purpose. `onPress` (App.tsx's `nextRound`)
+   flips the phase to `playing` synchronously from this button's own
+   `pointerdown`, and React commits that before the next paint — so this
+   element is unmounted before any browser ever gets a frame to paint the
+   pressed state in. The 100 ms painted-response rule is still met, just not by
+   this rule: it is the capture-phase `showTapRipple` and `playTick` in
+   `handleAnyPress` (App.tsx) that answer the touch, the same way they answer
+   every other touch on the screen. */
 .next-btn {
   display: grid;
   place-items: center;
@@ -1082,10 +1090,6 @@ html[data-mode='world'] .world-badge {
   background: var(--next-amber);
   box-shadow: 0 6px 0 rgba(0, 0, 0, 0.18);
   transition: transform 120ms ease-out;
-}
-
-.next-btn:active {
-  transform: scale(0.94) translateY(2px);
 }
 
 /* --- tap-to-place flight ----------------------------------------------------
