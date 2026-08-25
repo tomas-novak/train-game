@@ -544,6 +544,22 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
   ) => {
     const isWrong = phase === 'wrong'
     const isDeparting = phase === 'departing'
+    /**
+     * Has the train left the rails? True for the whole time it is gone, which is
+     * the departure AND the celebration that follows it.
+     *
+     * `train-depart` runs 1.6s after a 0.2s delay and holds its last frame
+     * (`forwards`), and that is exactly `DEPART_MS`. So the train reached
+     * `translateX(-140%)` at the same moment the phase flipped to `celebrating` —
+     * and because the class was keyed on `departing` alone, it was removed right
+     * then, the animation stopped holding, and the whole train snapped back onto
+     * the rails to sit there for the rest of the celebration. Reported from the
+     * tablet: the train "comes back before it restarts".
+     *
+     * The rake stays in `trainItems` until `nextRound` clears it, so the class is
+     * what has to outlive the phase, not the items.
+     */
+    const hasLeft = isDeparting || phase === 'celebrating'
     const patternId = useId()
     const rowRef = useRef<HTMLDivElement>(null)
     /**
@@ -1350,7 +1366,7 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
           className={`absolute inset-0 flex ${
             world ? 'items-end justify-end' : 'items-center'
           } gap-0 overflow-hidden ${
-            isDeparting && !world ? 'train-depart' : ''
+            hasLeft && !world ? 'train-depart' : ''
           }`}
           /* `paddingBottom` is what stands the whole train on the rail in world
              mode — see `railPad`. Zero in classic, which centres instead. */
@@ -1362,7 +1378,7 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
           <div
             ref={trainRef}
             className={`flex ${world ? 'items-end' : 'items-center'} gap-0 ${
-              isDeparting && world ? 'train-depart' : ''
+              hasLeft && world ? 'train-depart' : ''
             }`}
           >
           {/* The bay the engine goes in, while there is no engine — and while it is
