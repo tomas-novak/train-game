@@ -104,3 +104,14 @@ export type TrainItem =
   | { kind: 'wagon'; type: WagonType }
 
 export type KeyedTrainItem = TrainItem & { _key: number }
+
+/**
+ * The round's own state machine, driven by `useGameState`.
+ *
+ * Lives here rather than in the hook because a pure util (`utils/mood.ts`'s
+ * `nextMood`) needs it and importing a type from a hook is backwards — types
+ * belong in `src/types/`, hooks consume them. `useGameState.ts` re-exports it
+ * so every existing `import type { GamePhase } from '../hooks/useGameState'`
+ * keeps working unchanged.
+ */
+export type GamePhase = 'playing' | 'departing' | 'celebrating' | 'wrong'

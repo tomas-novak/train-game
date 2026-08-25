@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import type { Task, GameProgress, ValidationResult, TrainItem, KeyedTrainItem, WagonType } from '../types'
+import type { Task, GameProgress, ValidationResult, TrainItem, KeyedTrainItem, WagonType, GamePhase } from '../types'
 import { LEVELS } from '../data/levels'
 import { pickWanted, validateTrain } from '../utils/validation'
 import { generateTask } from '../utils/random'
@@ -7,6 +7,10 @@ import { canAddToTrain, placedLoco, placedWagons, trainTap } from '../utils/trai
 import type { TrainTap } from '../utils/train'
 import { readMode } from '../utils/mode'
 import { advanceProgress, parseProgress, INITIAL_PROGRESS } from '../utils/progress'
+
+/** Re-exported so existing `import type { GamePhase } from '../hooks/useGameState'`
+ *  call sites keep working — the type itself now lives in `src/types/`. */
+export type { GamePhase }
 
 /**
  * May a wagon of a different load sweep the coupled load off the rails?
@@ -60,8 +64,6 @@ function readRaw(): string | null {
 }
 
 const initialProgress = parseProgress(readRaw(), LEVELS.length)
-
-export type GamePhase = 'playing' | 'departing' | 'celebrating' | 'wrong'
 
 /** The outcome of a placement: the item that went on, and what came off for it. */
 export interface PlaceResult {
@@ -413,7 +415,6 @@ export function useGameState(): GameState {
       const visible = hiddenKey === null
         ? trainItems
         : trainItems.filter((t) => t._key !== hiddenKey)
-      void 0
       const wagons = placedWagons(visible)
       return validateTrain(
         task,

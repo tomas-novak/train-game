@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { GamePhase } from './useGameState'
+import type { GamePhase } from '../types'
+import { nextMood } from '../utils/mood'
 
 /** How long the engine looks sad after a refused train. */
 const SAD_MS = 1000
@@ -31,24 +32,16 @@ export function useEngineMood(phase: GamePhase): 'happy' | 'sad' {
    * a prop changes": comparing against the previous value during the render
    * itself, so the state is already correct in the render that reacts to the
    * phase change and no extra render is scheduled afterwards.
+   *
+   * The transition rule itself — what "entering" and "leaving" `wrong` mean for
+   * `sad` — is `nextMood` (`utils/mood.ts`), a pure function with its own tests:
+   * this branch's two shipped bugs both lived in this rule while it was inlined
+   * here, in the one file this task added with logic and no test.
    */
   const [prevPhase, setPrevPhase] = useState(phase)
   if (phase !== prevPhase) {
     setPrevPhase(phase)
-    // Unconditional, not `if (phase === 'wrong') setSad(true)`: the phase can
-    // leave `wrong` on a touch rather than on a correction — `addToTrain` in
-    // useGameState.ts flips `wrong` back to `playing` the instant the child
-    // places or removes any wagon, which for a four-year-old is well inside
-    // the second the timer below is still counting down. Without this branch
-    // covering the leaving side too, `sad` was left `true` forever in that
-    // case: the timer that was supposed to clear it had already been armed
-    // for a `wrong` phase that no longer exists, so its cleanup below just
-    // cancels it, and nothing else ever calls `setSad(false)` again. Setting
-    // it here, from the phase transition itself, means a child who fixes his
-    // train gets the smile back the moment he fixes it, and the timer keeps
-    // its one remaining job: returning the smile when he leaves the wrong
-    // train standing and does nothing.
-    setSad(phase === 'wrong')
+    setSad(nextMood(prevPhase, phase, sad))
   }
   /**
    * The fall lives here: a timer that puts the smile back after `SAD_MS`,
