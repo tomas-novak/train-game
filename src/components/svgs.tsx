@@ -84,35 +84,18 @@ const FACE_INK = '#2c1a0d'
 /**
  * The two mouths — roadmap B3.
  *
- * In SVG y grows downward, so the happy path's control point BELOW the ends
- * (y=55 against y=49) is what makes it a smile; the sad one puts the control
- * point above and the same stroke turns down. Same two endpoints, same width, so
- * nothing moves on the face except the curve.
+ * In SVG y grows downward, so a control point BELOW the two endpoints (y=55
+ * against y=49) bows the stroke down into a smile, and a control point ABOVE
+ * them (y=47 against y=53) bows it up into a frown. The endpoints themselves
+ * move too — from y=49 to y=53 — which keeps the mouth centred on the same
+ * point on the face rather than pinned to the same two corners; only the
+ * control point's SIDE of the endpoints is what decides which way it curves.
  *
  * No colour anywhere near this. Red belongs to the refused departure and green
  * to a correct train, and a sad face is neither of those things.
  */
 const MOUTH_HAPPY = 'M105,49 Q112,55 119,49'
 const MOUTH_SAD = 'M105,53 Q112,47 119,53'
-
-/**
- * The sad mouth for `ElectricLoco` and `DieselLoco` — roadmap B3.
- *
- * Design left these two without a smile (see the comment on each `Face` call
- * below), so `MOUTH_HAPPY` has no equivalent here and there is nothing to
- * revert to; `mood` only ever adds this path and only in sadness.
- *
- * `MOUTH_SAD` above is drawn for the steam engine's face (`cx=112, cy=40,
- * gap=13, r=4.4`) and cannot simply be reused: these two faces are drawn at a
- * fraction of that size (`gap=7, r=2.9` and `gap=9, r=3.4`), so the same
- * absolute mouth would be wider than the whole face it sits on. Each path below
- * is `MOUTH_SAD`'s own shape — half-width, endpoint offset and control offset
- * all scaled by this face's eye radius against the steam engine's `r=4.4` —
- * re-centred on the `cx, cy` of that engine's own `Face` call, read from the
- * call itself rather than guessed.
- */
-const MOUTH_SAD_ELECTRIC = 'M115,39 Q120,35 125,39'
-const MOUTH_SAD_DIESEL = 'M117,41 Q122,36 127,41'
 
 const Face: FC<{ cx: number; cy: number; gap: number; r: number; smile?: string }> = ({
   cx, cy, gap, r, smile,
@@ -184,7 +167,7 @@ export const SteamLoco: FC<TrainIcon> = ({ size = 100, t, mood = 'happy' }) => {
   )
 }
 
-export const ElectricLoco: FC<TrainIcon> = ({ size = 100, t, mood = 'happy' }) => {
+export const ElectricLoco: FC<TrainIcon> = ({ size = 100, t }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? BASE).electric as SkyTheme['electric']
@@ -224,15 +207,17 @@ export const ElectricLoco: FC<TrainIcon> = ({ size = 100, t, mood = 'happy' }) =
         <Wheel cx={100} cy={64} r={7} wheel={s.wheel} wheelHub={s.bodyHi} />
         <Wheel cx={116} cy={64} r={7} wheel={s.wheel} wheelHub={s.bodyHi} />
         {/* Behind the cab glass, which is where a face belongs on an engine with
-            no smokebox door to put one on. No smile in the happy state — design
-            left this face without one — so a mouth appears only in sadness. */}
-        <Face cx={120} cy={30} gap={7} r={2.9} smile={mood === 'sad' ? MOUTH_SAD_ELECTRIC : undefined} />
+            no smokebox door to put one on. No smile at all — design left this
+            face without one, and `mood` never reaches this engine (world mode
+            auto-places `steam` every round; see `App.tsx`'s locomotive effect),
+            so there is nothing here to switch on it. */}
+        <Face cx={120} cy={30} gap={7} r={2.9} />
       </g>
     </svg>
   )
 }
 
-export const DieselLoco: FC<TrainIcon> = ({ size = 100, t, mood = 'happy' }) => {
+export const DieselLoco: FC<TrainIcon> = ({ size = 100, t }) => {
   const raw = useId()
   const id = raw.replace(/[^a-zA-Z0-9_-]/g, '')
   const s = (t ?? BASE).diesel as SkyTheme['diesel']
@@ -273,8 +258,11 @@ export const DieselLoco: FC<TrainIcon> = ({ size = 100, t, mood = 'happy' }) => 
         <Wheel cx={114} cy={64} r={8} wheel={s.wheel} wheelHub={s.bodyHi} />
         {/* On the nose, above the headlamp — which then reads as the nose of the
             face rather than as a fitting, and no smile is needed to say so. No
-            smile in the happy state, only in sadness. */}
-        <Face cx={122} cy={31} gap={9} r={3.4} smile={mood === 'sad' ? MOUTH_SAD_DIESEL : undefined} />
+            smile at all — design left this face without one, and `mood` never
+            reaches this engine (world mode auto-places `steam` every round; see
+            `App.tsx`'s locomotive effect), so there is nothing here to switch
+            on it. */}
+        <Face cx={122} cy={31} gap={9} r={3.4} />
       </g>
     </svg>
   )
