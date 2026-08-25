@@ -26,11 +26,7 @@ export const NextButton: FC<{ onPress: () => void }> = ({ onPress }) => {
          that plainly landed. */
       data-touchable
       aria-label="Další"
-      // `pointer-events-auto`: the wrapping band in App.tsx is `pointer-events-none`
-      // (see the comment there) so touches beside the button reach the palette
-      // instead of being swallowed by the band, which means the button itself has
-      // to opt back in to receive its own presses.
-      className="next-btn touch-none select-none pointer-events-auto"
+      className="next-btn touch-none select-none"
       style={{ width: size, height: size }}
       onPointerDown={(e) => {
         e.preventDefault()

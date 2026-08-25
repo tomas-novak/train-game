@@ -1581,6 +1581,33 @@ export default function App() {
               marginTop: -40,
             }}
           >
+            {/* One control at a time, and this is where that rule was broken.
+                During the celebration the go button is already inert — `goState`
+                is 'busy' and `handleGoPress` returns on it — but it went on
+                painting a full-size spent disc and its white ring, and the next
+                button sat in an absolute band on top of that, overlapping its
+                lower edge. On the tablet that read as one odd double-button, a
+                small blob stuck to the bottom of a big pale circle, rather than
+                as "tap here". So the round's control now BECOMES the next
+                button: same slot, same footprint, nothing overlapping anything,
+                and the amber is finally seen against the scene it was measured
+                against instead of against pink.
+
+                The go button is unmounted rather than hidden, because hiding it
+                could strand a `go-*` animation class that `onAnimationEnd` would
+                then never clear — and that class would still be on the element
+                when it came back for the next round. */}
+            {game.phase === 'celebrating' && (
+              <div
+                className="grid place-items-center"
+                /* The go button's own box, so swapping the control cannot reflow
+                   the column and shift the scene mid-celebration. */
+                style={{ width: 'var(--go-hit)', height: 'var(--go-hit)' }}
+              >
+                <NextButton onPress={game.nextRound} />
+              </div>
+            )}
+            {game.phase !== 'celebrating' && (
             <button
               ref={goRef}
               data-touchable
@@ -1616,6 +1643,7 @@ export default function App() {
                 </svg>
               </span>
             </button>
+            )}
           </div>
 
           {/* drag ghost */}
@@ -1676,19 +1704,9 @@ export default function App() {
               — see `WorldCheer`. */}
           {game.phase === 'celebrating' && (isWorld ? <WorldCheer /> : <Celebration />)}
 
-          {game.phase === 'celebrating' && (
-            // `pointer-events-none` on the band and `-auto` back on the button
-            // itself: this row spans the full width, but the button in it is only
-            // 88 px wide, so without this the row swallowed every touch either
-            // side of the button during the whole celebration — the same dead
-            // zone `WorldCheer` is deliberately `pointer-events-none` to avoid.
-            <div
-              className="absolute inset-x-0 z-50 flex justify-center pointer-events-none"
-              style={{ bottom: 'var(--go-pop-room)' }}
-            >
-              <NextButton onPress={game.nextRound} />
-            </div>
-          )}
+          {/* The next button used to be an absolute band here, laid over the go
+              button. It now lives in the go button's own slot instead — see the
+              comment there. */}
 
           {/* reset flash */}
           {resetting && (
