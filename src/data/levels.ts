@@ -51,3 +51,18 @@ export const LEVELS: LevelDef[] = [
 ]
 
 export const CORRECT_PER_LEVEL = 3
+
+/**
+ * How many rounds WITH A MISTAKE IN THEM, back to back, drop the level.
+ *
+ * Two, not three. The roadmap offered 2-3 and a four-year-old who has just had
+ * three rounds in a row go wrong has already stopped playing, so help that
+ * arrives after the third one arrives too late.
+ *
+ * Lives here, next to `CORRECT_PER_LEVEL`, rather than in `utils/progress.ts`
+ * where the logic that reads it lives: AGENTS.md requires every difficulty
+ * knob to live in `/src/data/`, and this one is a difficulty knob like any
+ * other — it decides how forgiving the game is, not how the demotion is
+ * computed.
+ */
+export const WRONG_TO_DEMOTE = 2

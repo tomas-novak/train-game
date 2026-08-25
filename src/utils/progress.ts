@@ -1,14 +1,5 @@
 import type { GameProgress } from '../types'
-import { CORRECT_PER_LEVEL } from '../data/levels'
-
-/**
- * How many rounds WITH A MISTAKE IN THEM, back to back, drop the level.
- *
- * Two, not three. The roadmap offered 2-3 and a four-year-old who has just had
- * three rounds in a row go wrong has already stopped playing, so help that
- * arrives after the third one arrives too late.
- */
-export const WRONG_TO_DEMOTE = 2
+import { CORRECT_PER_LEVEL, WRONG_TO_DEMOTE } from '../data/levels'
 
 export const INITIAL_PROGRESS: GameProgress = { level: 1, correctInLevel: 0, wrongStreak: 0 }
 
@@ -47,25 +38,45 @@ export function advanceProgress(
 }
 
 /**
+ * True for a value `Math.floor`/arithmetic can be trusted on: a genuine finite
+ * number, never a string, an object, `NaN` or `Infinity`. `Number.isFinite`
+ * already narrows `unknown` to `number` on its own type signature, but reading
+ * that narrowing back out of a stored property required an `as number` at every
+ * call site below — three of them, one per field. A named guard removes all
+ * three: TypeScript narrows through the guard itself, so nothing downstream has
+ * to assert what this function already proved.
+ */
+const isFiniteNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+
+/**
  * Reads stored progress, and takes the raw string rather than touching
  * localStorage itself so it can be tested without a DOM.
  *
  * Anything it cannot vouch for becomes a fresh start. A stored NaN would survive
  * every clamp below and then poison `LEVELS[level - 1]`, so finiteness is checked
- * rather than assumed.
+ * rather than assumed — and the same has to be true of the two streaks, not just
+ * the level: a stored `correctInLevel` or `wrongStreak` of, say, 99 is exactly
+ * as unearned as a level of 99, and left unclamped it promotes or demotes the
+ * very next round instead of the next `CORRECT_PER_LEVEL` or `WRONG_TO_DEMOTE`
+ * rounds. Neither streak is ever legitimately stored at or above the constant
+ * that reads it — `advanceProgress` resets to 0 in the same tick it would
+ * otherwise reach one — so that constant minus one is the sane ceiling here.
  */
 export function parseProgress(raw: string | null, maxLevel: number): GameProgress {
   if (raw === null) return INITIAL_PROGRESS
   try {
     const parsed = JSON.parse(raw) as Partial<GameProgress>
-    if (!Number.isFinite(parsed.level) || !Number.isFinite(parsed.correctInLevel)) {
+    if (!isFiniteNumber(parsed.level) || !isFiniteNumber(parsed.correctInLevel)) {
       return INITIAL_PROGRESS
     }
     return {
-      level: Math.min(Math.max(1, Math.floor(parsed.level as number)), maxLevel),
-      correctInLevel: Math.max(0, Math.floor(parsed.correctInLevel as number)),
-      wrongStreak: Number.isFinite(parsed.wrongStreak)
-        ? Math.max(0, Math.floor(parsed.wrongStreak as number))
+      level: Math.min(Math.max(1, Math.floor(parsed.level)), maxLevel),
+      correctInLevel: Math.min(
+        Math.max(0, Math.floor(parsed.correctInLevel)),
+        CORRECT_PER_LEVEL - 1,
+      ),
+      wrongStreak: isFiniteNumber(parsed.wrongStreak)
+        ? Math.min(Math.max(0, Math.floor(parsed.wrongStreak)), WRONG_TO_DEMOTE - 1)
         : 0,
     }
   } catch {

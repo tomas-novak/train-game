@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { advanceProgress, parseProgress, INITIAL_PROGRESS, WRONG_TO_DEMOTE } from './progress'
+import { advanceProgress, parseProgress, INITIAL_PROGRESS } from './progress'
+import { CORRECT_PER_LEVEL, WRONG_TO_DEMOTE } from '../data/levels'
 
 const MAX_LEVEL = 3
 const at = (level: number, correctInLevel: number, wrongStreak: number) => ({
@@ -77,5 +78,37 @@ describe('parseProgress', () => {
 
   it('rejects non-finite numbers instead of storing NaN', () => {
     expect(parseProgress('{"level":null,"correctInLevel":0}', MAX_LEVEL)).toEqual(INITIAL_PROGRESS)
+  })
+
+  // Both of these parse to a value whose properties are absent or of the wrong
+  // shape rather than throwing at JSON.parse, so the fallback that saves them
+  // is the `try`'s catch of the property access below it (`null.level` throws;
+  // `[].level` is merely `undefined`) — not a check written for this case on
+  // purpose. Pinned here so a future refactor of the guard cannot silently stop
+  // covering either shape.
+  it('returns the initial progress for the JSON literal null', () => {
+    expect(parseProgress('null', MAX_LEVEL)).toEqual(INITIAL_PROGRESS)
+  })
+
+  it('returns the initial progress for an empty array', () => {
+    expect(parseProgress('[]', MAX_LEVEL)).toEqual(INITIAL_PROGRESS)
+  })
+
+  // `parseProgress`'s job is "anything it cannot vouch for becomes a fresh
+  // start" — that has to cover the streaks as much as the level. Neither streak
+  // is ever legitimately stored at or above the constant that reads it, so a
+  // stored value at the old `sky` key's ceiling (or a corrupted one past it)
+  // must not survive into a round that would otherwise promote or demote
+  // immediately instead of after the real number of clean or dirty rounds.
+  it('clamps correctInLevel below the promotion threshold', () => {
+    expect(
+      parseProgress('{"level":2,"correctInLevel":99}', MAX_LEVEL).correctInLevel,
+    ).toBe(CORRECT_PER_LEVEL - 1)
+  })
+
+  it('clamps wrongStreak below the demotion threshold', () => {
+    expect(
+      parseProgress('{"level":2,"correctInLevel":0,"wrongStreak":99}', MAX_LEVEL).wrongStreak,
+    ).toBe(WRONG_TO_DEMOTE - 1)
   })
 })
