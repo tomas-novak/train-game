@@ -38,7 +38,7 @@ Celá sekce A je hotová a zmergovaná (PR #11, merge `8d1b609`). Hotové je i C
 | C2 adaptivní obtížnost | ✅ hotovo | `utils/progress.ts`, `hooks/useGameState.ts` |
 | C3 zámek resetu | ✅ hotovo | `App.tsx` (`RESET_HOLD_MS`), podržení 900 ms |
 | D1 pointerId | ✅ hotovo | `App.tsx`, vyřešeno spolu s A2 |
-| D2 PWA / fullscreen / gesta | ✅ hotovo | `index.html`, `public/manifest.json`, `src/index.css`, `hooks/useWakeLock.ts` |
+| D2 PWA / fullscreen / gesta | ⏳ částečně ověřeno | `index.html`, `public/manifest.json`, `src/index.css`, `hooks/useWakeLock.ts` — instalace/fullscreen samo neověřeno z vývojářského prostředí, viz níže |
 | D3 rozložení na šířku | ☐ nezačato | a je to teď blokátor i pro E, viz níže |
 | E další módy | ⏳ částečně | „Který vagón?“ existuje jako `?mode=world` |
 
@@ -191,6 +191,28 @@ jednou odeslal špatný vlak — a dvě taková kola za sebou snižují level o 
 Level jde nahoru po třech čistých kolech za sebou. Strop levelu 3 je stažený z 10 na 5
 (`data/levels.ts`); world mód má pořád vlastní strop 2 (`WORLD_MAX_COUNT` v `data/world.ts`).
 
+**Otevřená otázka: co C2 vlastně znamená ve world módu.** Spec (a dřívější
+verze tohoto řádku) tvrdila, že snížení levelu se ve world módu projeví „na
+typech vagónů a na nápovědě nákladu". Druhá půlka je nepravdivá: `App.tsx`
+vynucuje `cargoHints = true` ve world módu bez ohledu na level, takže nápověda
+nákladu se snížením nemění vůbec. A je to horší, než jen chybějící efekt na
+jedné vlastnosti — ve world módu se špatný typ vagónu odmítne rovnou při
+výběru (`pickWanted` v `utils/validation.ts`) a nikdy se nedostane do fáze
+`wrong`, takže jediná chyba, kterou tam dítě může vůbec zaznamenat, je
+zmáčknutí odjezdu s příliš málo vagóny — a `WORLD_MAX_COUNT` drží počet na 2
+na každém levelu, takže snížení z levelu 3 na 2 reálně ubere jen náklad
+`people` (fond `wagonTypeIds` je na levelech 2 a 3 stejný, mění se jen
+`cargoIds`).
+
+Tři možnosti, žádná z nich zatím vybraná — je to rozhodnutí o zážitku dítěte,
+ne o kódu:
+
+1. Nechat neúspěšný pokus ve world módu „zašpinit" kolo (počítat ho jako
+   chybu), aby `wrongStreak` měl vůbec co počítat.
+2. Dát world levelům něco, co dítě skutečně pozná — jinou nabídku vagónů,
+   jiné tempo, cokoliv hmatatelného na obrazovce, kterou reálně hraje.
+3. Zapsat C2 jako hotové jen pro klasický mód a world mód z nároku vyjmout.
+
 ### C3. Tlačítko resetu je past
 
 **✅ Hotovo.** Reset je za podržením, `RESET_HOLD_MS = 900` v `App.tsx`. Roadmapa
@@ -207,16 +229,26 @@ se na to dítě prokliká.
 
 ### D2. Chybí fullscreen / PWA (Android Chrome)
 
-**✅ Hotovo.** Vypnutí pull-to-refresh (`overscroll-behavior: none` v `index.css`)
-bylo hotové už dřív, stránka se neposouvá, `scrollHeight` se rovná `clientHeight`
-v obou orientacích. Přibylo: `public/manifest.json` s `display: "fullscreen"`,
+**⏳ Částečně ověřeno.** Co je ověřené: vypnutí pull-to-refresh
+(`overscroll-behavior: none` v `index.css`) bylo hotové už dřív, stránka se
+neposouvá, `scrollHeight` se rovná `clientHeight` v obou orientacích.
 `touch-action: manipulation` na `html` a `body` (double-tap zoom a 300ms delay
 pryč, tažení z A2 zůstalo živé přes `touch-action: none` na tažených plochách),
 `user-scalable=no, maximum-scale=1` ve viewport meta a `lang="cs"` v `index.html`,
-a Wake Lock (`hooks/useWakeLock.ts`) proti zhasnutí obrazovky během hraní.
+a Wake Lock (`hooks/useWakeLock.ts`) proti zhasnutí obrazovky během hraní — to
+všechno se dá zkontrolovat bez instalace a je hotové.
+
+Co ověřené NENÍ: `public/manifest.json` s `display: "fullscreen"` nedělá nic,
+dokud se appka skutečně nenainstaluje, a jestli Chrome na cílovém tabletu
+instalaci vůbec nabídne s jednou SVG ikonou (`public/favicon.svg`,
+`"sizes": "any"`) a bez service workera, nelze ověřit z vývojového prostředí —
+to je přesně to, co se z tohoto stroje otestovat nedalo, ne domněnka.
 
 Zbývá:
 
+- **Ověřit instalaci na reálném tabletu.** Když se nabídka „Instalovat aplikaci"
+  neobjeví, doplní se `icon-192.png` a `icon-512.png` jako samostatný druhý
+  krok (viz spec, sekce D2 — „Proč SVG a ne PNG").
 - **Service worker.** Vlastní rozhodnutí, ne mezera: cíl je fullscreen a ikona na
   ploše, ne offline režim, a přidávat ho jen kvůli instalační nabídce by byla
   komplikace bez skutečné potřeby.

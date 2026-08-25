@@ -81,7 +81,7 @@ Level 1 is deliberately 1–2, not 1–3 (`roadmap.md` A3): guessing a wagon typ
 The offered wagon types are generated from the current task, and the cargo is drawn inside the wagon
 shells on levels 1–2 so the mapping explains itself, then removed at level 3 so it is learned.
 
-Advance after 3 clean rounds in a row (a round with a wrong submission in it is not clean). Two rounds with a mistake, back to back, drop the level by one. Roadmap C2; the logic is a pure function in src/utils/progress.ts. Progress saved in localStorage.
+Advance after 3 clean rounds in a row (a round with a wrong submission in it is not clean). Two rounds with a mistake, back to back, drop the level by one. Roadmap C2; the logic is a pure function in `src/utils/progress.ts`. Progress saved in `localStorage`.
 
 ### Validation
 Correct = locomotive selected + correct wagon type + correct wagon count.

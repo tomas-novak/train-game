@@ -167,8 +167,19 @@ kdyby se strop vracel nahoru.
 `WORLD_MAX_COUNT = 2` v `data/world.ts` zůstává. Není to knoflík obtížnosti,
 je to kresba: komentář na řádku 707 a okolí to odvozuje z toho, že při třech
 vagónech vypadne z rámu tvář lokomotivy, a tvář je ve world módu jediná velká
-tvář na obrazovce. Snížení levelu se ve world módu projeví na typech vagónů
-a na nápovědě nákladu, na počtu ne.
+tvář na obrazovce.
+
+**Oprava po whole-branch review:** tahle sekce dřív tvrdila, že snížení levelu
+se ve world módu projeví „na typech vagónů a na nápovědě nákladu, na počtu ne".
+Nápověda nákladu je nepravdivá polovina té věty — `App.tsx` drží
+`cargoHints = true` ve world módu na každém levelu, takže se snížením nemění.
+A dopad na typy vagónů je menší, než věta naznačuje: ve world módu se špatný
+typ odmítne přímo při výběru (`pickWanted`), takže se tam nikdy nedostane do
+fáze `wrong`, a `WORLD_MAX_COUNT` drží počet na 2 na každém levelu — takže
+snížení z levelu 3 na 2 reálně ubere jen náklad `people` (fond
+`wagonTypeIds` je na levelech 2 a 3 stejný). Jestli má world mód vůbec něco,
+co je při snížení levelu cítit, je otevřená otázka zapsaná v `roadmap.md`
+pod C2 — tahle spec ji neřeší.
 
 ## Sekce 3: B1 dokončení
 

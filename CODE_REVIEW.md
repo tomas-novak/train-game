@@ -21,7 +21,7 @@ Keep feedback direct, constructive, and proportionate — this is a toy project,
 3. **Validation Logic:** Cargo→wagon mapping must be enforced consistently. Changes here affect all levels — check edge cases.
 4. **Child UX:** No text labels anywhere in the UI. Tap targets minimum 64px. If a change adds readable text to the game screen, flag it.
 5. **Performance:** No unnecessary re-renders. Don't filter/sort inside render functions.
-6. **localStorage:** Only `trainGameProgress` key. No sensitive data, no bloat.
+6. **localStorage:** Only `trainGameProgress.v2` key. No sensitive data, no bloat.
 
 ## Conventions to Enforce
 
@@ -34,7 +34,7 @@ Keep feedback direct, constructive, and proportionate — this is a toy project,
 
 - **Do NOT** comment on formatting or indentation (ESLint/Prettier handles this)
 - **Do NOT** review auto-generated files (`dist/`, `node_modules/`)
-- **Do NOT** suggest adding tests — no test suite currently
+- **Do NOT** suggest a different test framework or config — vitest is already wired up (`npm test`), pure functions in `/src/utils/` and `/src/hooks/` get unit tests there
 - **Do NOT** suggest backend, auth, or analytics — out of scope
 
 ## Feedback Format
