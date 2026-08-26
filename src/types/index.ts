@@ -15,6 +15,11 @@ export interface TrainIcon {
    * head, but he can match a milk bottle to a milk bottle. Locomotives ignore it.
    */
   showCargo?: string
+  /**
+   * The engine's expression — roadmap B3, and only the world-mode drawings in
+   * `svgs.tsx` read it. Everything else ignores it, exactly like `showCargo`.
+   */
+  mood?: 'happy' | 'sad'
 }
 
 export interface Locomotive {
@@ -77,7 +82,14 @@ export interface Task {
 
 export interface GameProgress {
   level: number
+  /**
+   * Clean rounds in a row at this level. A round with a wrong submission in it
+   * resets this to zero, which is the whole of roadmap C2: the level used to
+   * rise every third round no matter how many mistakes were in them.
+   */
   correctInLevel: number
+  /** Rounds with a mistake in them, back to back. Reaching WRONG_TO_DEMOTE drops the level. */
+  wrongStreak: number
 }
 
 export type ValidationResult = {
@@ -92,3 +104,14 @@ export type TrainItem =
   | { kind: 'wagon'; type: WagonType }
 
 export type KeyedTrainItem = TrainItem & { _key: number }
+
+/**
+ * The round's own state machine, driven by `useGameState`.
+ *
+ * Lives here rather than in the hook because a pure util (`utils/mood.ts`'s
+ * `nextMood`) needs it and importing a type from a hook is backwards — types
+ * belong in `src/types/`, hooks consume them. `useGameState.ts` re-exports it
+ * so every existing `import type { GamePhase } from '../hooks/useGameState'`
+ * keeps working unchanged.
+ */
+export type GamePhase = 'playing' | 'departing' | 'celebrating' | 'wrong'

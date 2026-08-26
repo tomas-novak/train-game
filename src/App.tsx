@@ -1,8 +1,10 @@
 import { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react'
 import { useGameState } from './hooks/useGameState'
 import { useTablet } from './hooks/useTablet'
+import { useWakeLock } from './hooks/useWakeLock'
 import { useSpeech } from './hooks/useSpeech'
 import { useGameAudio } from './hooks/useGameAudio'
+import { useEngineMood } from './hooks/useEngineMood'
 import { CORRECT_PER_LEVEL } from './data/levels'
 import { TaskHero } from './components/TaskHero'
 import { HelpModal } from './components/HelpModal'
@@ -10,6 +12,7 @@ import { DragPalette } from './components/DragPalette'
 import { WorldChoice } from './components/WorldChoice'
 import { TrackZone } from './components/TrackZone'
 import { Celebration } from './components/Celebration'
+import { NextButton } from './components/NextButton'
 import { MuteButton } from './components/MuteButton'
 import { Scene } from './components/Scene'
 import { WorldScene } from './components/WorldScene'
@@ -238,6 +241,7 @@ const SceneShell = isWorld ? WorldScene : Scene
 export default function App() {
   const game = useGameState()
   const isTablet = useTablet()
+  useWakeLock()
   /**
    * The viewport's height in px, because world mode's track band is a fraction of
    * it and the whole scene is anchored to that band. Read once and then on resize
@@ -321,6 +325,19 @@ export default function App() {
     placeSeq: game.placeSeq,
     speech,
   })
+  /**
+   * The engine's expression — roadmap B3. The hook itself must still be called
+   * unconditionally (hooks may not be called conditionally), but the phase it
+   * is fed is pinned to `'playing'` outside world mode, so classic's calls to
+   * `setSad`/`setPrevPhase` inside it never fire from a real transition — every
+   * phase change classic ever has is invisible to a hook whose one input never
+   * moves. That used to cost classic an extra render pass of a very large
+   * component on every phase change, for a value classic's `Face` (svgs.tsx,
+   * `FACE` is false there) can never use. Pinning the input rather than
+   * skipping the call makes "world only" a structural fact about this line
+   * instead of an incidental one that the next edit could quietly break.
+   */
+  const engineMood = useEngineMood(isWorld ? game.phase : 'playing')
   /**
    * How tall the band the train stands in is — and in world mode it is 36 px
    * taller than it was, because the measured whole-screen objection was that the
@@ -1523,6 +1540,9 @@ export default function App() {
             /* The waiting stock, standing at the far end of these very rails. */
             offer={worldOffer}
             onSizes={isWorld ? handleWorldSizes : undefined}
+            /* World mode only — roadmap B3. Classic's call carries no `mood` at
+               all, not even the default, so its props are unchanged by this task. */
+            mood={isWorld ? engineMood : undefined}
           />
 
           {/* Send the train. Icon only: one disc, one arrow, no word anywhere near
@@ -1561,6 +1581,33 @@ export default function App() {
               marginTop: -40,
             }}
           >
+            {/* One control at a time, and this is where that rule was broken.
+                During the celebration the go button is already inert — `goState`
+                is 'busy' and `handleGoPress` returns on it — but it went on
+                painting a full-size spent disc and its white ring, and the next
+                button sat in an absolute band on top of that, overlapping its
+                lower edge. On the tablet that read as one odd double-button, a
+                small blob stuck to the bottom of a big pale circle, rather than
+                as "tap here". So the round's control now BECOMES the next
+                button: same slot, same footprint, nothing overlapping anything,
+                and the amber is finally seen against the scene it was measured
+                against instead of against pink.
+
+                The go button is unmounted rather than hidden, because hiding it
+                could strand a `go-*` animation class that `onAnimationEnd` would
+                then never clear — and that class would still be on the element
+                when it came back for the next round. */}
+            {game.phase === 'celebrating' && (
+              <div
+                className="grid place-items-center"
+                /* The go button's own box, so swapping the control cannot reflow
+                   the column and shift the scene mid-celebration. */
+                style={{ width: 'var(--go-hit)', height: 'var(--go-hit)' }}
+              >
+                <NextButton onPress={game.nextRound} />
+              </div>
+            )}
+            {game.phase !== 'celebrating' && (
             <button
               ref={goRef}
               data-touchable
@@ -1596,6 +1643,7 @@ export default function App() {
                 </svg>
               </span>
             </button>
+            )}
           </div>
 
           {/* drag ghost */}
@@ -1655,6 +1703,10 @@ export default function App() {
               mode does not cover the place it just spent the whole round building
               — see `WorldCheer`. */}
           {game.phase === 'celebrating' && (isWorld ? <WorldCheer /> : <Celebration />)}
+
+          {/* The next button used to be an absolute band here, laid over the go
+              button. It now lives in the go button's own slot instead — see the
+              comment there. */}
 
           {/* reset flash */}
           {resetting && (

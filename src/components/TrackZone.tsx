@@ -510,6 +510,13 @@ interface Props {
    * its wheels to land on the same rail head as a coupled wagon's.
    */
   onSizes?: (s: { coupled: number; offer: number; bottomPad: number }) => void
+  /**
+   * The engine's expression — roadmap B3, world mode only. Applies to the engine
+   * standing on these rails, never to a palette card: a sad face on an unplaced
+   * card would be reacting to something that card did not do. Undefined draws the
+   * default happy face, exactly as before this prop existed.
+   */
+  mood?: 'happy' | 'sad'
 }
 
 export const TrackZone = forwardRef<HTMLDivElement, Props>(
@@ -531,11 +538,28 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
       choiceCount = 0,
       offer = null,
       onSizes,
+      mood,
     },
     ref,
   ) => {
     const isWrong = phase === 'wrong'
     const isDeparting = phase === 'departing'
+    /**
+     * Has the train left the rails? True for the whole time it is gone, which is
+     * the departure AND the celebration that follows it.
+     *
+     * `train-depart` runs 1.6s after a 0.2s delay and holds its last frame
+     * (`forwards`), and that is exactly `DEPART_MS`. So the train reached
+     * `translateX(-140%)` at the same moment the phase flipped to `celebrating` —
+     * and because the class was keyed on `departing` alone, it was removed right
+     * then, the animation stopped holding, and the whole train snapped back onto
+     * the rails to sit there for the rest of the celebration. Reported from the
+     * tablet: the train "comes back before it restarts".
+     *
+     * The rake stays in `trainItems` until `nextRound` clears it, so the class is
+     * what has to outlive the phase, not the items.
+     */
+    const hasLeft = isDeparting || phase === 'celebrating'
     const patternId = useId()
     const rowRef = useRef<HTMLDivElement>(null)
     /**
@@ -1342,7 +1366,7 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
           className={`absolute inset-0 flex ${
             world ? 'items-end justify-end' : 'items-center'
           } gap-0 overflow-hidden ${
-            isDeparting && !world ? 'train-depart' : ''
+            hasLeft && !world ? 'train-depart' : ''
           }`}
           /* `paddingBottom` is what stands the whole train on the rail in world
              mode — see `railPad`. Zero in classic, which centres instead. */
@@ -1354,7 +1378,7 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
           <div
             ref={trainRef}
             className={`flex ${world ? 'items-end' : 'items-center'} gap-0 ${
-              isDeparting && world ? 'train-depart' : ''
+              hasLeft && world ? 'train-depart' : ''
             }`}
           >
           {/* The bay the engine goes in, while there is no engine — and while it is
@@ -1443,7 +1467,10 @@ export const TrackZone = forwardRef<HTMLDivElement, Props>(
                       ...(isPending ? { visibility: 'hidden' as const } : null),
                     }}
                   >
-                    <Icon size={item.kind === 'loco' ? locoSz : wagonSz} />
+                    <Icon
+                      size={item.kind === 'loco' ? locoSz : wagonSz}
+                      {...(item.kind === 'loco' ? { mood } : null)}
+                    />
                     {/* Somebody is riding on it — see `Rider`. Only on the wagons:
                         the engine already has a face of its own, and only once the
                         wagon has actually landed, so the flying copy and the wagon

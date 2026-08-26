@@ -1,0 +1,17 @@
+{
+  "name": "Poskládej vlak",
+  "short_name": "Vlak",
+  "lang": "cs",
+  "start_url": "/",
+  "display": "fullscreen",
+  "background_color": "#e6f1fa",
+  "theme_color": "#e6f1fa",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

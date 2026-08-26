@@ -706,6 +706,13 @@ html[data-mode='world'] .world-badge {
 :root {
   /* The primary action, and the only place this hue appears in the app. */
   --go-pink: #f558ab;
+  /* The next button's own hue, and it has to be its own.
+     Green is the correctness signal and nothing else may borrow it, red belongs
+     to the refused departure, and `--go-pink` is the go button's, which the file
+     already calls "the one hue nothing else on the screen uses". That leaves a
+     third one for "the round is over, carry on", and amber is far enough from
+     the pale cream `sun` to not read as a sun. */
+  --next-amber: #f2a13c;
   /* Nothing to send at all: a flat slate plate. The only switched-off-looking
      object left in the game, and it earns it — there is genuinely nothing on the
      rails to send, which is a fact and not a verdict on anything the child chose. */
@@ -1065,6 +1072,46 @@ html[data-mode='world'] .world-badge {
 
 .go-attn::after {
   animation: go-ring 700ms cubic-bezier(0.25, 0.8, 0.35, 1);
+}
+
+/* No `:active` squash rule here on purpose. `onPress` (App.tsx's `nextRound`)
+   flips the phase to `playing` synchronously from this button's own
+   `pointerdown`, and React commits that before the next paint — so this
+   element is unmounted before any browser ever gets a frame to paint the
+   pressed state in. The 100 ms painted-response rule is still met, just not by
+   this rule: it is the capture-phase `showTapRipple` and `playTick` in
+   `handleAnyPress` (App.tsx) that answer the touch, the same way they answer
+   every other touch on the screen. */
+/* It breathes, and that is not decoration.
+   This button was the only control in the game that waited for a press without
+   saying so: the go button in `ready` invites with `go-breathe` on its disc and
+   `go-creep` on its arrow, the palette invites the same way, and this one sat
+   perfectly still. Measured against the cheer, that was the whole problem —
+   the balloons are all down by 2920 ms (the longest is `delay: 320` plus
+   `ms: 2600` in `CHEER`) and the falling stars by about 3030 ms, so everything
+   after that was a motionless screen holding a silent button. A four-year-old
+   who cannot read has nothing else to go on: no motion means nothing is
+   happening, not "your turn".
+   Same timing and the same easing as the go button's invitation on purpose, so
+   the two read as one language rather than two. */
+.next-btn {
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: var(--next-amber);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.18);
+  /* No `transition: transform` here. It was left over from the `:active` squash
+     that was deleted above, so it had nothing to drive, and a transition sitting
+     under an infinite animation on the same property is a trap for whoever reads
+     this next. */
+  animation: go-breathe 2400ms ease-in-out infinite;
+}
+
+/* ...and the chevron creeps forward inside it, the same difference between a
+   button and something moving on that `go-creep` draws for the departure. */
+.next-btn svg {
+  animation: go-creep 2400ms ease-in-out infinite;
 }
 
 /* --- tap-to-place flight ----------------------------------------------------
@@ -1473,10 +1520,15 @@ html[data-mode='world'] .world-badge {
    column inside then loses the bottom of its flexible row (the palette) instead
    of pushing the primary action out of the frame. `overscroll-behavior` stops the
    rubber-band drag that a touch on a non-scrollable page can still produce. */
+/* `manipulation` and deliberately not `none`: it kills double-tap zoom and the
+   300 ms click delay, which is the whole point, but a global `none` would kill
+   the drag that roadmap A2 kept alive beside the tap. The surfaces that actually
+   drag opt into `none` for themselves below. */
 html {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
+  touch-action: manipulation;
 }
 
 body {
@@ -1485,6 +1537,7 @@ body {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
+  touch-action: manipulation;
   font-family: system-ui, sans-serif;
 }
 
@@ -1762,6 +1815,16 @@ html[data-mode='world'] {
   --go-pink: #8f4a75;
   --go-dead: #8f4a75;
   --go-spent: #c79cb6;
+  /* The world palette quiets every control it draws — measured above as
+     `--go-pink` dropping from L65.3/S88.7 to L42.5/S31.8 for the PRIMARY
+     control, the one on screen for the whole round. The next button is only a
+     TRANSIENT control, on screen for the celebration alone, but at the
+     classic `#f2a13c` (L59.2/S87.5) it was louder than the muted go button
+     sitting right under it, which inverts the hierarchy this palette exists
+     to state. So it gets the same treatment, roughly the same drop applied to
+     pink: L38.0 (was 59.2, -21.2) and S32.0 (was 87.5, -55.5), landing on
+     `#806442` — still amber, not the go button's plum and not green. */
+  --next-amber: #806442;
   /* And the disc is smaller here than on the classic screen, which is the one
      place this mode contradicts section A's "one primary action, huge".
      Measured: at 768x1024 the button came out 234x234, LARGER than the 216x121

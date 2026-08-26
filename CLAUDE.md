@@ -20,5 +20,5 @@ Read and follow `AGENTS.md` as the main source of truth for this project.
 
 - All game content lives in `/src/data/` — when adding new cargo, wagons, or levels, edit data files only, not components.
 - UI must work without any text labels — the child cannot read. Use emojis and numbers only.
-- When changing validation logic, always test all 3 levels mentally (edge cases: count=1, count=10, people cargo).
-- `localStorage` key: `trainGameProgress` — structure: `{ level: number, correctInLevel: number }`.
+- When changing validation logic, always test all 3 levels mentally (edge cases: count=1, count=5, people cargo).
+- `localStorage` key: `trainGameProgress.v2` — structure: `{ level: number, correctInLevel: number, wrongStreak: number }`. `correctInLevel` is a streak of clean rounds, not a cumulative tally.
