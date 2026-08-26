@@ -45,10 +45,20 @@ const DEPART_MS = 1800
  *
  * The child sets the pace with the next button; this is only the safety net for
  * a child who does not press it, so the game never traps him on a screen he
- * cannot leave. Deliberately generous. It was 2200 ms of auto-advance with no
- * button at all, which is what roadmap B1 objected to.
+ * cannot leave. It was 2200 ms of auto-advance with no button at all, which is
+ * what roadmap B1 objected to.
+ *
+ * Four seconds, not the eight this first shipped with. Eight was picked as
+ * "generously safe" without checking it against the cheer, and the cheer is
+ * over long before that: the balloons are all down by 2920 ms (`CHEER` in
+ * data/world.ts) and the falling stars by about 3030 ms. So eight seconds meant
+ * roughly five seconds of a motionless screen every single round, which for a
+ * four-year-old reads as the game having stopped rather than as an invitation.
+ * Four leaves the cheer its full run and about a second of the button breathing
+ * afterwards. A child who wants longer taps nothing and loses nothing; the round
+ * simply moves on.
  */
-const CELEBRATE_FALLBACK_MS = 8000
+const CELEBRATE_FALLBACK_MS = 4000
 const PULSE_MS = 600
 
 function saveProgress(progress: GameProgress) {

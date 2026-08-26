@@ -1082,6 +1082,18 @@ html[data-mode='world'] .world-badge {
    this rule: it is the capture-phase `showTapRipple` and `playTick` in
    `handleAnyPress` (App.tsx) that answer the touch, the same way they answer
    every other touch on the screen. */
+/* It breathes, and that is not decoration.
+   This button was the only control in the game that waited for a press without
+   saying so: the go button in `ready` invites with `go-breathe` on its disc and
+   `go-creep` on its arrow, the palette invites the same way, and this one sat
+   perfectly still. Measured against the cheer, that was the whole problem —
+   the balloons are all down by 2920 ms (the longest is `delay: 320` plus
+   `ms: 2600` in `CHEER`) and the falling stars by about 3030 ms, so everything
+   after that was a motionless screen holding a silent button. A four-year-old
+   who cannot read has nothing else to go on: no motion means nothing is
+   happening, not "your turn".
+   Same timing and the same easing as the go button's invitation on purpose, so
+   the two read as one language rather than two. */
 .next-btn {
   display: grid;
   place-items: center;
@@ -1089,7 +1101,17 @@ html[data-mode='world'] .world-badge {
   border-radius: 999px;
   background: var(--next-amber);
   box-shadow: 0 6px 0 rgba(0, 0, 0, 0.18);
-  transition: transform 120ms ease-out;
+  /* No `transition: transform` here. It was left over from the `:active` squash
+     that was deleted above, so it had nothing to drive, and a transition sitting
+     under an infinite animation on the same property is a trap for whoever reads
+     this next. */
+  animation: go-breathe 2400ms ease-in-out infinite;
+}
+
+/* ...and the chevron creeps forward inside it, the same difference between a
+   button and something moving on that `go-creep` draws for the departure. */
+.next-btn svg {
+  animation: go-creep 2400ms ease-in-out infinite;
 }
 
 /* --- tap-to-place flight ----------------------------------------------------
